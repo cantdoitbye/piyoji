@@ -160,6 +160,8 @@ class SellerController extends BaseAdminController
             'status' => 'required|boolean'
         ]);
 
+
+
         try {
             $this->service->updateStatus($id, $request->status);
             

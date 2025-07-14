@@ -11,7 +11,10 @@ use App\Repositories\Interfaces\{
     AdminUserRepositoryInterface,
     SellerRepositoryInterface,
     BuyerRepositoryInterface,
-    CourierRepositoryInterface
+    CourierRepositoryInterface,
+    LogisticCompanyRepositoryInterface,
+    ContractRepositoryInterface,
+    ContractItemRepositoryInterface
 };
 
 // Repository Implementations
@@ -20,7 +23,10 @@ use App\Repositories\{
     AdminUserRepository,
     SellerRepository,
     BuyerRepository,
-    CourierRepository
+    CourierRepository,
+    LogisticCompanyRepository,
+    ContractRepository,
+    ContractItemRepository
 };
 
 // Service Interfaces
@@ -30,7 +36,9 @@ use App\Services\Interfaces\BaseServiceInterface;
 use App\Services\{
     SellerService,
     BuyerService,
-    CourierService
+    CourierService,
+    LogisticCompanyService,
+    ContractService
 };
 
 
@@ -59,6 +67,22 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(CourierRepositoryInterface::class, CourierRepository::class);
         $this->app->bind(CourierService::class, function ($app) {
             return new CourierService($app->make(CourierRepositoryInterface::class));
+        });
+
+         // Logistic Company Repository and Service
+        $this->app->bind(LogisticCompanyRepositoryInterface::class, LogisticCompanyRepository::class);
+        $this->app->bind(LogisticCompanyService::class, function ($app) {
+            return new LogisticCompanyService($app->make(LogisticCompanyRepositoryInterface::class));
+        });
+        
+        // Contract Repository and Service
+        $this->app->bind(ContractRepositoryInterface::class, ContractRepository::class);
+        $this->app->bind(ContractItemRepositoryInterface::class, ContractItemRepository::class);
+        $this->app->bind(ContractService::class, function ($app) {
+            return new ContractService(
+                $app->make(ContractRepositoryInterface::class),
+                $app->make(ContractItemRepositoryInterface::class)
+            );
         });
     }
 

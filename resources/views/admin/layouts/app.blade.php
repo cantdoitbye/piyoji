@@ -299,14 +299,14 @@
                         </li>
                         
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ route('admin.logistics.index')}}">
                                 <i class="fas fa-truck"></i>
                                 Logistic Companies
                             </a>
                         </li>
                         
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ route('admin.contracts.index')}}">
                                 <i class="fas fa-file-contract"></i>
                                 Contracts
                             </a>

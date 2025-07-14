@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\{
     DashboardController,
     SellerController,
     BuyerController,
-    CourierController
+    ContractController,
+    CourierController,
+    LogisticCompanyController
 };
 
 /*
@@ -93,79 +95,71 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('{id}/tracking-url', [CourierController::class, 'generateTrackingUrl'])->name('tracking-url');
         });
         
-        // Logistic Companies (Future implementation)
-        Route::prefix('logistics')->name('logistics.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Logistic Companies']);
-            })->name('index');
-        });
+      Route::prefix('logistics')->name('logistics.')->group(function () {
+        Route::get('/', [LogisticCompanyController::class, 'index'])->name('index');
+        Route::get('create', [LogisticCompanyController::class, 'create'])->name('create');
+        Route::post('/', [LogisticCompanyController::class, 'store'])->name('store');
+        Route::get('{id}', [LogisticCompanyController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [LogisticCompanyController::class, 'edit'])->name('edit');
+        Route::put('{id}', [LogisticCompanyController::class, 'update'])->name('update');
+        Route::delete('{id}', [LogisticCompanyController::class, 'destroy'])->name('destroy');
         
-        // Contract Management (Future implementation)
-        Route::prefix('contracts')->name('contracts.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Contract Management']);
-            })->name('index');
-        });
+        // Additional logistic company routes
+        Route::patch('{id}/status', [LogisticCompanyController::class, 'updateStatus'])->name('update-status');
+        Route::post('bulk-action', [LogisticCompanyController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('export', [LogisticCompanyController::class, 'export'])->name('export');
+        Route::get('by-region', [LogisticCompanyController::class, 'getByRegion'])->name('by-region');
+        Route::get('by-route', [LogisticCompanyController::class, 'getByRoute'])->name('by-route');
+        Route::get('by-state', [LogisticCompanyController::class, 'getByState'])->name('by-state');
+        Route::post('{id}/calculate-cost', [LogisticCompanyController::class, 'calculateShippingCost'])->name('calculate-cost');
+    });
+    
+    // Contract Management (Module 1.5)
+    Route::prefix('contracts')->name('contracts.')->group(function () {
+        Route::get('/', [ContractController::class, 'index'])->name('index');
+        Route::get('create', [ContractController::class, 'create'])->name('create');
+        Route::post('/', [ContractController::class, 'store'])->name('store');
+        Route::get('{id}', [ContractController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [ContractController::class, 'edit'])->name('edit');
+        Route::put('{id}', [ContractController::class, 'update'])->name('update');
+        Route::delete('{id}', [ContractController::class, 'destroy'])->name('destroy');
         
-        // Sample Management (Future implementation)
-        Route::prefix('samples')->name('samples.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Sample Management']);
-            })->name('index');
-            
-            Route::get('receiving', function () {
-                return view('admin.coming-soon', ['title' => 'Sample Receiving']);
-            })->name('receiving');
-            
-            Route::get('evaluation', function () {
-                return view('admin.coming-soon', ['title' => 'Sample Evaluation']);
-            })->name('evaluation');
-            
-            Route::get('assignment', function () {
-                return view('admin.coming-soon', ['title' => 'Buyer Assignment']);
-            })->name('assignment');
-        });
+        // Contract status management
+        Route::patch('{id}/status', [ContractController::class, 'updateStatus'])->name('update-status');
+        Route::post('{id}/activate', [ContractController::class, 'activate'])->name('activate');
+        Route::post('{id}/cancel', [ContractController::class, 'cancel'])->name('cancel');
+        Route::post('{id}/expire', [ContractController::class, 'expire'])->name('expire');
         
-        // Dispatch Management (Future implementation)
-        Route::prefix('dispatch')->name('dispatch.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Dispatch Management']);
-            })->name('index');
-            
-            Route::get('samples', function () {
-                return view('admin.coming-soon', ['title' => 'Sample Dispatch']);
-            })->name('samples');
-            
-            Route::get('feedback', function () {
-                return view('admin.coming-soon', ['title' => 'Buyer Feedback']);
-            })->name('feedback');
-            
-            Route::get('advice', function () {
-                return view('admin.coming-soon', ['title' => 'Dispatch Advice']);
-            })->name('advice');
-        });
+        // Bulk actions and utilities
+        Route::post('bulk-action', [ContractController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('export', [ContractController::class, 'export'])->name('export');
+        Route::post('{id}/upload-file', [ContractController::class, 'uploadFile'])->name('upload-file');
         
-        // Reports (Future implementation)
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Reports']);
-            })->name('index');
-            
-            Route::get('sales', function () {
-                return view('admin.coming-soon', ['title' => 'Sales Reports']);
-            })->name('sales');
-            
-            Route::get('commission', function () {
-                return view('admin.coming-soon', ['title' => 'Commission Reports']);
-            })->name('commission');
-        });
+        // Data retrieval routes
+        Route::get('expiry-alerts', [ContractController::class, 'getExpiryAlerts'])->name('expiry-alerts');
+        Route::post('send-expiry-alerts', [ContractController::class, 'sendExpiryAlerts'])->name('send-expiry-alerts');
+        Route::get('by-tea-grade', [ContractController::class, 'getByTeaGrade'])->name('by-tea-grade');
+        Route::get('by-seller', [ContractController::class, 'getBySeller'])->name('by-seller');
+        Route::get('get-price', [ContractController::class, 'getPrice'])->name('get-price');
+        Route::get('tea-grades-by-seller', [ContractController::class, 'getTeaGradesBySeller'])->name('tea-grades-by-seller');
+        Route::get('performance-data', [ContractController::class, 'getPerformanceData'])->name('performance-data');
         
-        // Settings
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/', function () {
-                return view('admin.coming-soon', ['title' => 'Settings']);
-            })->name('index');
+        // Contract Items Management
+        Route::prefix('{contractId}/items')->name('items.')->group(function () {
+            Route::get('/', [ContractController::class, 'getItems'])->name('index');
+            Route::post('/', [ContractController::class, 'addItem'])->name('store');
+            Route::put('{itemId}', [ContractController::class, 'updateItem'])->name('update');
+            Route::delete('{itemId}', [ContractController::class, 'deleteItem'])->name('destroy');
+            Route::patch('{itemId}/status', [ContractController::class, 'updateItemStatus'])->name('update-status');
         });
+    });
+      
+        
+      
+        
+      
+        
+      
         
     });
 });
