@@ -267,6 +267,19 @@
                                 Dashboard
                             </a>
                         </li>
+
+                        <li class="nav-item">
+    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-light">
+        <span>User Management</span>
+    </h6>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+        <i class="fas fa-users"></i>
+        System Users
+    </a>
+</li>
                         
                         <li class="nav-item">
                             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-light">

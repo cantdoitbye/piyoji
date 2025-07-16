@@ -8,7 +8,8 @@ use App\Http\Controllers\Admin\{
     BuyerController,
     ContractController,
     CourierController,
-    LogisticCompanyController
+    LogisticCompanyController,
+    UserController
 };
 
 /*
@@ -41,6 +42,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/', [DashboardController::class, 'index']);
         
+         // User Management (NEW)
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('index');
+            Route::get('create', [UserController::class, 'create'])->name('create');
+            Route::post('/', [UserController::class, 'store'])->name('store');
+            Route::get('{id}', [UserController::class, 'show'])->name('show');
+            Route::get('{id}/edit', [UserController::class, 'edit'])->name('edit');
+            Route::put('{id}', [UserController::class, 'update'])->name('update');
+            Route::delete('{id}', [UserController::class, 'destroy'])->name('destroy');
+            
+            // Additional user routes
+            Route::patch('{id}/status', [UserController::class, 'updateStatus'])->name('update-status');
+            Route::post('bulk-action', [UserController::class, 'bulkAction'])->name('bulk-action');
+            Route::get('export', [UserController::class, 'export'])->name('export');
+        });
         // Sellers Management
         Route::prefix('sellers')->name('sellers.')->group(function () {
             Route::get('/', [SellerController::class, 'index'])->name('index');

@@ -251,41 +251,98 @@
 
                     <!-- Tea Preferences -->
                     <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-leaf me-2"></i>Tea Preferences
-                            </h6>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="preferred_tea_grades" class="form-label">
-                                Preferred Tea Grades <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select select2 @error('preferred_tea_grades') is-invalid @enderror" 
-                                    id="preferred_tea_grades" name="preferred_tea_grades[]" multiple required>
-                                @foreach($teaGrades as $key => $grade)
-                                    <option value="{{ $key }}" 
-                                            {{ in_array($key, old('preferred_tea_grades', $buyer->preferred_tea_grades ?? [])) ? 'selected' : '' }}>
-                                        {{ $key }} - {{ $grade }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('preferred_tea_grades')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <div class="form-text">Select tea grades that this buyer prefers to purchase</div>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="remarks" class="form-label">Remarks</label>
-                            <textarea class="form-control @error('remarks') is-invalid @enderror" 
-                                      id="remarks" name="remarks" rows="3" 
-                                      placeholder="Any additional notes or remarks">{{ old('remarks', $buyer->remarks ?? '') }}</textarea>
-                            @error('remarks')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+    <div class="col-12">
+        <h6 class="text-primary border-bottom pb-2 mb-3">
+            <i class="fas fa-leaf me-2"></i>Tea Preferences
+        </h6>
+    </div>
+    
+    <!-- NEW IMPROVED TEA GRADES UI FOR BUYERS -->
+    <div class="col-12 mb-3">
+        <div class="tea-grade-selector @error('preferred_tea_grades') border-danger @enderror" id="teaGradeSelector">
+            <div class="d-flex align-items-center mb-3">
+                <i class="fas fa-heart text-danger me-2"></i>
+                <strong>Preferred Tea Grades <span class="text-danger">*</span></strong>
+                <span class="ms-auto text-muted" id="selectionCount">0 selected</span>
+            </div>
+            
+            <!-- Search Box -->
+            <input type="text" class="search-box" placeholder="Search tea grades by code or name..." id="searchBox">
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">
+                    <i class="fas fa-check-double me-1"></i> Select All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAll()">
+                    <i class="fas fa-times me-1"></i> Clear All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info" onclick="selectCommon()">
+                    <i class="fas fa-star me-1"></i> Select Popular Grades
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="selectPremium()">
+                    <i class="fas fa-gem me-1"></i> Select Premium Grades
+                </button>
+            </div>
+            
+            <!-- Tea Grades Grid -->
+            <div class="tea-grade-grid" id="teaGradeGrid">
+                @foreach($teaGrades as $key => $grade)
+                    <div class="tea-grade-item {{ in_array($key, old('preferred_tea_grades', $buyer->preferred_tea_grades ?? [])) ? 'selected' : '' }}" 
+                         data-grade="{{ $key }}" onclick="toggleGrade('{{ $key }}')">
+                        <div class="grade-code">{{ $key }}</div>
+                        <div class="grade-name">{{ $grade }}</div>
+                        <i class="fas fa-heart check-icon"></i>
                     </div>
+                @endforeach
+            </div>
+            
+            <!-- Selection Summary -->
+            <div class="selection-summary d-none" id="selectionSummary">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    <strong>Selected Preferred Tea Grades:</strong>
+                </div>
+                <div id="selectedTags"></div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        These preferences will help us recommend suitable tea samples for this buyer.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden select for form submission -->
+        <select class="d-none @error('preferred_tea_grades') is-invalid @enderror" 
+                name="preferred_tea_grades[]" id="hiddenTeaGrades" multiple>
+            @foreach($teaGrades as $key => $grade)
+                <option value="{{ $key }}" 
+                        {{ in_array($key, old('preferred_tea_grades', $buyer->preferred_tea_grades ?? [])) ? 'selected' : '' }}>
+                    {{ $key }} - {{ $grade }}
+                </option>
+            @endforeach
+        </select>
+        
+        @error('preferred_tea_grades')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+        <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Select tea grades that this buyer prefers to purchase. This helps in sample allocation and recommendations.
+        </div>
+    </div>
+    
+    <div class="col-12 mb-3">
+        <label for="remarks" class="form-label">Remarks</label>
+        <textarea class="form-control @error('remarks') is-invalid @enderror" 
+                  id="remarks" name="remarks" rows="3" 
+                  placeholder="Any additional notes, special requirements, or preferences about this buyer">{{ old('remarks', $buyer->remarks ?? '') }}</textarea>
+        @error('remarks')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+</div>
 
                     <!-- Form Actions -->
                     <div class="row">
@@ -386,6 +443,147 @@
 .select2-container--bootstrap-5 .select2-selection {
     min-height: 38px;
 }
+
+.tea-grade-selector {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+    
+    .tea-grade-selector.has-selections {
+        border-color: #dc3545;
+        background: #fff5f5;
+    }
+    
+    .tea-grade-selector.border-danger {
+        border-color: #dc3545 !important;
+        background: #ffeaea;
+    }
+    
+    .tea-grade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+    }
+    
+    .tea-grade-item {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+        position: relative;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .tea-grade-item:hover {
+        border-color: #dc3545;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .tea-grade-item.selected {
+        border-color: #dc3545;
+        background: #f8d7da;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.25);
+    }
+    
+    .tea-grade-item .grade-code {
+        font-weight: bold;
+        color: #495057;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .tea-grade-item .grade-name {
+        color: #6c757d;
+        font-size: 12px;
+        line-height: 1.3;
+    }
+    
+    .tea-grade-item .check-icon {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        color: #dc3545;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        font-size: 14px;
+    }
+    
+    .tea-grade-item.selected .check-icon {
+        opacity: 1;
+    }
+    
+    .selection-summary {
+        background: #fff5f5;
+        border: 1px solid #f5c2c7;
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 15px;
+    }
+    
+    .selected-grade-tag {
+        display: inline-block;
+        background: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin: 2px;
+        font-weight: 500;
+    }
+    
+    .search-box {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px 12px;
+        width: 100%;
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+    
+    .search-box:focus {
+        outline: none;
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .quick-actions {
+        margin-bottom: 15px;
+    }
+    
+    .quick-actions button {
+        margin-right: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .tea-grade-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        
+        .tea-grade-item {
+            padding: 10px;
+            min-height: 60px;
+        }
+        
+        .quick-actions button {
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+    }
 </style>
 @endpush
 
@@ -393,14 +591,9 @@
 <script>
 $(document).ready(function() {
     // Initialize Select2 for tea grades
-    $('#preferred_tea_grades').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Select preferred tea grades...',
-        allowClear: true
-    });
+      initializeTeaGradeSelector();
 
-    // Handle same as billing checkbox
-    $('#same_as_billing').change(function() {
+$('#same_as_billing').change(function() {
         if (this.checked) {
             // Copy billing address to shipping
             $('#shipping_address').val($('#billing_address').val());
@@ -424,13 +617,12 @@ $(document).ready(function() {
         }
     });
 
-    // Form validation
+    // Updated form validation
     $('#buyerForm').on('submit', function(e) {
         let isValid = true;
         
         // Validate preferred tea grades selection
-        const teaGrades = $('#preferred_tea_grades').val();
-        if (!teaGrades || teaGrades.length === 0) {
+        if (!validateTeaGrades()) {
             showError('preferred_tea_grades', 'Please select at least one preferred tea grade');
             isValid = false;
         }
@@ -444,15 +636,145 @@ $(document).ready(function() {
     });
 });
 
+// Tea grades functionality for buyers
+const teaGrades = @json($teaGrades);
+const commonGrades = ['BP', 'BOP', 'PD', 'Dust', 'FOP', 'OP']; // Popular/common grades
+const premiumGrades = ['FTGFOP', 'TGFOP', 'GFOP', 'FOP']; // Premium grades
+let selectedGrades = @json(old('preferred_tea_grades', $buyer->preferred_tea_grades ?? []));
+
+function initializeTeaGradeSelector() {
+    updateUI();
+    
+    // Initialize search functionality
+    document.getElementById('searchBox').addEventListener('input', filterGrades);
+}
+
+function toggleGrade(grade) {
+    const index = selectedGrades.indexOf(grade);
+    if (index > -1) {
+        selectedGrades.splice(index, 1);
+    } else {
+        selectedGrades.push(grade);
+    }
+    updateUI();
+    
+    // Clear any previous validation errors
+    const selector = document.getElementById('teaGradeSelector');
+    selector.classList.remove('border-danger');
+    const errorElements = document.querySelectorAll('.invalid-feedback');
+    errorElements.forEach(el => el.remove());
+}
+
+function selectAll() {
+    selectedGrades = Object.keys(teaGrades);
+    updateUI();
+}
+
+function clearAll() {
+    selectedGrades = [];
+    updateUI();
+}
+
+function selectCommon() {
+    selectedGrades = [...commonGrades.filter(grade => teaGrades.hasOwnProperty(grade))];
+    updateUI();
+}
+
+function selectPremium() {
+    selectedGrades = [...premiumGrades.filter(grade => teaGrades.hasOwnProperty(grade))];
+    updateUI();
+}
+
+function updateUI() {
+    // Update visual selection
+    document.querySelectorAll('.tea-grade-item').forEach(item => {
+        const grade = item.dataset.grade;
+        if (selectedGrades.includes(grade)) {
+            item.classList.add('selected');
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+    
+    // Update selector container
+    const selector = document.getElementById('teaGradeSelector');
+    if (selectedGrades.length > 0) {
+        selector.classList.add('has-selections');
+    } else {
+        selector.classList.remove('has-selections');
+    }
+    
+    // Update count
+    const countElement = document.getElementById('selectionCount');
+    countElement.textContent = `${selectedGrades.length} selected`;
+    
+    // Update summary
+    const summary = document.getElementById('selectionSummary');
+    const tagsContainer = document.getElementById('selectedTags');
+    
+    if (selectedGrades.length > 0) {
+        summary.classList.remove('d-none');
+        tagsContainer.innerHTML = selectedGrades.map(grade => 
+            `<span class="selected-grade-tag">${grade} - ${teaGrades[grade]}</span>`
+        ).join('');
+    } else {
+        summary.classList.add('d-none');
+    }
+    
+    // Update hidden form field
+    const hiddenSelect = document.getElementById('hiddenTeaGrades');
+    hiddenSelect.innerHTML = selectedGrades.map(grade => 
+        `<option value="${grade}" selected>${grade}</option>`
+    ).join('');
+}
+
+function filterGrades() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    document.querySelectorAll('.tea-grade-item').forEach(item => {
+        const grade = item.dataset.grade;
+        const name = teaGrades[grade];
+        const matches = grade.toLowerCase().includes(searchTerm) || 
+                       name.toLowerCase().includes(searchTerm);
+        item.style.display = matches ? 'block' : 'none';
+    });
+}
+
+function validateTeaGrades() {
+    if (selectedGrades.length === 0) {
+        const selector = document.getElementById('teaGradeSelector');
+        selector.classList.add('border-danger');
+        return false;
+    }
+    return true;
+}
+
+// Updated showError function to handle the new UI
 function showError(fieldId, message) {
-    const field = $('#' + fieldId);
-    field.addClass('is-invalid');
-    
-    // Remove existing error message
-    field.siblings('.invalid-feedback').remove();
-    
-    // Add new error message
-    field.after('<div class="invalid-feedback">' + message + '</div>');
+    if (fieldId === 'preferred_tea_grades') {
+        const selector = document.getElementById('teaGradeSelector');
+        selector.classList.add('border-danger');
+        
+        // Remove existing error message
+        const existingError = selector.parentNode.querySelector('.invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Add new error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback d-block';
+        errorDiv.textContent = message;
+        selector.parentNode.appendChild(errorDiv);
+    } else {
+        const field = $('#' + fieldId);
+        field.addClass('is-invalid');
+        
+        // Remove existing error message
+        field.siblings('.invalid-feedback').remove();
+        
+        // Add new error message
+        field.after('<div class="invalid-feedback">' + message + '</div>');
+    }
 }
 
 // Clear error state on input

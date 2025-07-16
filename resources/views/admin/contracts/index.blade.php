@@ -280,7 +280,7 @@
                             @if($contract->status === 'active')
                                 @if($contract->days_remaining !== null)
                                     @if($contract->days_remaining > 0)
-                                        <span class="text-{{ $contract->days_remaining <= 30 ? 'warning' : 'success' }}">
+                                        <span class="text-{{ $contract->days_remaining <= 30 ? 'danger' : 'success' }}">
                                             {{ $contract->days_remaining }} days
                                         </span>
                                     @else

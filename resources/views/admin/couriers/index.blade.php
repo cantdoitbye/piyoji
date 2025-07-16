@@ -351,7 +351,14 @@ function toggleStatus(id, status) {
     $.ajax({
         url: `/admin/couriers/${id}/status`,
         method: 'PATCH',
-        data: { status: status },
+        // data: { status: status },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: JSON.stringify({ 
+            status: status === true || status === 'true' ? true : false
+        }),
         success: function(response) {
             hideLoading();
             if (response.success) {

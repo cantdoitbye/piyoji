@@ -111,14 +111,29 @@ class Contract extends Model
         };
     }
 
-    public function getDaysRemainingAttribute()
-    {
-        if ($this->status !== self::STATUS_ACTIVE) {
-            return null;
-        }
+    // public function getDaysRemainingAttribute()
+    // {
+    //     if ($this->status !== self::STATUS_ACTIVE) {
+    //         return null;
+    //     }
         
-        return now()->diffInDays($this->expiry_date, false);
+    //     return now()->diffInDays($this->expiry_date, false);
+    // }
+    public function getDaysRemainingAttribute()
+{
+    if ($this->status !== self::STATUS_ACTIVE) {
+        return null;
     }
+    
+    $now = now()->startOfDay(); // Start of current day
+    $expiryDate = $this->expiry_date->startOfDay(); // Start of expiry day
+    
+    // Calculate complete days between dates
+    $days = $now->diffInDays($expiryDate, false);
+    
+    // Return as integer, ensuring no negative values for display
+    return max(0, (int) $days);
+}
 
     public function getIsExpiringAttribute()
     {

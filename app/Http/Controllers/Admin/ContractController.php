@@ -111,7 +111,7 @@ class ContractController extends BaseAdminController
         }
     }
 
-    public function show(int $id): View|JsonResponse
+    public function show($id): View|JsonResponse
     {
         $contract = $this->service->show($id);
 
