@@ -332,14 +332,14 @@
                         </li>
                         
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ route('admin.samples.index') }}">
                                 <i class="fas fa-flask"></i>
                                 Sample Receiving
                             </a>
                         </li>
                         
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ route('admin.samples.pending-evaluations') }}">
                                 <i class="fas fa-clipboard-check"></i>
                                 Sample Evaluation
                             </a>

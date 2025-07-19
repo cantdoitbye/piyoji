@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SampleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +48,31 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::post('refresh-token', [AuthController::class, 'refreshToken']);
         Route::post('check-permission', [AuthController::class, 'checkPermission']);
         
+    });
+
+
+     Route::prefix('samples')->name('samples.')->group(function () {
+        Route::get('/', [SampleController::class, 'index'])->name('index');
+        Route::post('/', [SampleController::class, 'store'])->name('store');
+        Route::get('{id}', [SampleController::class, 'show'])->name('show');
+        Route::put('{id}', [SampleController::class, 'update'])->name('update');
+        Route::delete('{id}', [SampleController::class, 'destroy'])->name('destroy');
+        
+        // Evaluation endpoints (Module 2.2)
+        Route::post('{id}/start-evaluation', [SampleController::class, 'startEvaluation'])->name('start-evaluation');
+        Route::post('{id}/submit-evaluation', [SampleController::class, 'submitEvaluation'])->name('submit-evaluation');
+        
+        // Special endpoints
+        Route::get('pending-evaluations', [SampleController::class, 'pendingEvaluations'])->name('pending-evaluations');
+        Route::get('evaluated-samples', [SampleController::class, 'evaluatedSamples'])->name('evaluated');
+        Route::get('approved-samples', [SampleController::class, 'approvedSamples'])->name('approved');
+        Route::get('top-scoring', [SampleController::class, 'topScoringSamples'])->name('top-scoring');
+        
+        // Utility endpoints
+        Route::get('statistics', [SampleController::class, 'statistics'])->name('statistics');
+        Route::get('search', [SampleController::class, 'search'])->name('search');
+        Route::get('sellers', [SampleController::class, 'getSellers'])->name('sellers');
+        Route::get('tea-grades', [SampleController::class, 'getTeaGrades'])->name('tea-grades');
     });
     
    

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\{
     ContractController,
     CourierController,
     LogisticCompanyController,
+    SampleController,
     UserController
 };
 
@@ -168,13 +169,39 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('{itemId}', [ContractController::class, 'deleteItem'])->name('destroy');
             Route::patch('{itemId}/status', [ContractController::class, 'updateItemStatus'])->name('update-status');
         });
+
+        
     });
       
         
       
         
       
+          Route::prefix('samples')->name('samples.')->group(function () {
+        Route::get('/', [SampleController::class, 'index'])->name('index');
+        Route::get('create', [SampleController::class, 'create'])->name('create');
+        Route::post('/', [SampleController::class, 'store'])->name('store');
+        Route::get('{id}', [SampleController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [SampleController::class, 'edit'])->name('edit');
+        Route::put('{id}', [SampleController::class, 'update'])->name('update');
+        Route::delete('{id}', [SampleController::class, 'destroy'])->name('destroy');
         
+        // Evaluation routes (Module 2.2)
+        Route::get('{id}/evaluate', [SampleController::class, 'evaluate'])->name('evaluate');
+        Route::post('{id}/evaluate', [SampleController::class, 'storeEvaluation'])->name('store-evaluation');
+        Route::post('{id}/start-evaluation', [SampleController::class, 'startEvaluation'])->name('start-evaluation');
+        
+        // Special views
+        Route::get('pending-evaluations', [SampleController::class, 'pendingEvaluations'])->name('pending-evaluations');
+        Route::get('evaluated-samples', [SampleController::class, 'evaluatedSamples'])->name('evaluated');
+        Route::get('approved-samples', [SampleController::class, 'approvedSamples'])->name('approved');
+        Route::get('tasting-report', [SampleController::class, 'tastingReport'])->name('tasting-report');
+        
+        // Bulk operations
+        Route::get('bulk-upload', [SampleController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::post('bulk-upload', [SampleController::class, 'processBulkUpload'])->name('process-bulk-upload');
+        Route::get('export', [SampleController::class, 'export'])->name('export');
+    });
       
         
     });

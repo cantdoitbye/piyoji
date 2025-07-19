@@ -15,7 +15,8 @@ use App\Repositories\Interfaces\{
     LogisticCompanyRepositoryInterface,
     ContractRepositoryInterface,
     ContractItemRepositoryInterface,
-    UserRepositoryInterface
+    UserRepositoryInterface,
+    SampleRepositoryInterface
 };
 
 // Repository Implementations
@@ -28,7 +29,8 @@ use App\Repositories\{
     LogisticCompanyRepository,
     ContractRepository,
     ContractItemRepository,
-    UserRepository
+    UserRepository,
+    SampleRepository 
 
 };
 
@@ -41,7 +43,8 @@ use App\Services\{
     BuyerService,
     CourierService,
     LogisticCompanyService,
-    ContractService
+    ContractService,
+    SampleService 
 };
 
 
@@ -90,6 +93,14 @@ class RepositoryServiceProvider extends ServiceProvider
             return new ContractService(
                 $app->make(ContractRepositoryInterface::class),
                 $app->make(ContractItemRepositoryInterface::class)
+            );
+        });
+
+           $this->app->bind(SampleRepositoryInterface::class, SampleRepository::class);
+        $this->app->bind(SampleService::class, function ($app) {
+            return new SampleService(
+                $app->make(SampleRepositoryInterface::class),
+                $app->make(SellerRepositoryInterface::class)
             );
         });
     }

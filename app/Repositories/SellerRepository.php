@@ -17,7 +17,7 @@ class SellerRepository extends BaseRepository implements SellerRepositoryInterfa
     public function getActiveSellersList()
     {
         return $this->model->active()
-            ->select('id', 'seller_name', 'tea_estate_name')
+            ->select('id', 'seller_name', 'tea_estate_name','tea_grades')
             ->orderBy('seller_name')
             ->get();
     }
