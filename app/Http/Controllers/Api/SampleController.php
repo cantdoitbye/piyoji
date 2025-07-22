@@ -57,6 +57,32 @@ class SampleController extends Controller
         }
     }
 
+
+      public function sellers()
+    {
+        try {
+            $seller = $this->sellerService->index();
+
+            if (!$seller) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sellers not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $seller,
+                'message' => 'Sellers list retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve sellers list: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Get sample details
      * 

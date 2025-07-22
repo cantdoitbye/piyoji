@@ -16,7 +16,10 @@ use App\Repositories\Interfaces\{
     ContractRepositoryInterface,
     ContractItemRepositoryInterface,
     UserRepositoryInterface,
-    SampleRepositoryInterface
+    SampleRepositoryInterface,
+     PocRepositoryInterface,
+    TeaRepositoryInterface,
+    GardenRepositoryInterface
 };
 
 // Repository Implementations
@@ -30,7 +33,10 @@ use App\Repositories\{
     ContractRepository,
     ContractItemRepository,
     UserRepository,
-    SampleRepository 
+    SampleRepository,
+     PocRepository,
+    TeaRepository,
+    GardenRepository 
 
 };
 
@@ -44,7 +50,10 @@ use App\Services\{
     CourierService,
     LogisticCompanyService,
     ContractService,
-    SampleService 
+    SampleService,
+     PocService,
+    TeaService,
+    GardenService 
 };
 
 
@@ -101,6 +110,27 @@ class RepositoryServiceProvider extends ServiceProvider
             return new SampleService(
                 $app->make(SampleRepositoryInterface::class),
                 $app->make(SellerRepositoryInterface::class)
+            );
+        });
+
+         // POC Repository and Service
+        $this->app->bind(PocRepositoryInterface::class, PocRepository::class);
+        $this->app->bind(PocService::class, function ($app) {
+            return new PocService($app->make(PocRepositoryInterface::class));
+        });
+        
+        // Tea Repository and Service
+        $this->app->bind(TeaRepositoryInterface::class, TeaRepository::class);
+        $this->app->bind(TeaService::class, function ($app) {
+            return new TeaService($app->make(TeaRepositoryInterface::class));
+        });
+        
+        // Garden Repository and Service
+        $this->app->bind(GardenRepositoryInterface::class, GardenRepository::class);
+        $this->app->bind(GardenService::class, function ($app) {
+            return new GardenService(
+                $app->make(GardenRepositoryInterface::class),
+                $app->make(TeaRepositoryInterface::class)
             );
         });
     }

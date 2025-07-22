@@ -202,6 +202,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('bulk-upload', [SampleController::class, 'processBulkUpload'])->name('process-bulk-upload');
         Route::get('export', [SampleController::class, 'export'])->name('export');
     });
+
+     Route::resource('pocs', App\Http\Controllers\Admin\PocController::class);
+    Route::patch('pocs/{id}/toggle-status', [App\Http\Controllers\Admin\PocController::class, 'toggleStatus'])->name('pocs.toggle-status');
+    
+    // Tea Master Routes
+    Route::resource('teas', App\Http\Controllers\Admin\TeaController::class);
+    Route::patch('teas/{id}/toggle-status', [App\Http\Controllers\Admin\TeaController::class, 'toggleStatus'])->name('teas.toggle-status');
+    
+    // Garden Master Routes
+    Route::resource('gardens', App\Http\Controllers\Admin\GardenController::class);
+    Route::patch('gardens/{id}/toggle-status', [App\Http\Controllers\Admin\GardenController::class, 'toggleStatus'])->name('gardens.toggle-status');
+    
       
         
     });

@@ -286,6 +286,30 @@
                                 <span>Master Data</span>
                             </h6>
                         </li>
+
+                           <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.pocs.*') ? 'active' : '' }}" 
+                               href="{{ route('admin.pocs.index') }}">
+                                <i class="fas fa-user-tie"></i>
+                                POC Master
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.teas.*') ? 'active' : '' }}" 
+                               href="{{ route('admin.teas.index') }}">
+                                <i class="fas fa-leaf"></i>
+                                Tea Master
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.gardens.*') ? 'active' : '' }}" 
+                               href="{{ route('admin.gardens.index') }}">
+                                <i class="fas fa-seedling"></i>
+                                Garden Master
+                            </a>
+                        </li>
                         
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}" 
