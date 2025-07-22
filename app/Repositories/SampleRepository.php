@@ -431,7 +431,7 @@ class SampleRepository extends BaseRepository implements SampleRepositoryInterfa
             ->paginate($perPage);
     }
 
-    public function getSampleDetailsForMobile(int $id)
+    public function getSampleDetailsForMobile($id)
     {
         return $this->model->with([
             'seller:id,seller_name,tea_estate_name',

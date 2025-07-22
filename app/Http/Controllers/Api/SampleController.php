@@ -89,7 +89,7 @@ class SampleController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show(int $id)
+    public function show($id)
     {
         try {
             $sample = $this->sampleService->getSampleDetailsForMobile($id);

@@ -382,7 +382,7 @@ class SampleService
     /**
      * Get sample details for mobile app
      */
-    public function getSampleDetailsForMobile(int $id)
+    public function getSampleDetailsForMobile($id)
     {
         return $this->sampleRepository->getSampleDetailsForMobile($id);
     }

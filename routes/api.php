@@ -61,6 +61,7 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::delete('{id}', [SampleController::class, 'destroy'])->name('destroy');
         
         // Evaluation endpoints (Module 2.2)
+        // Route::get('{id}/evaluate', [SampleController::class, 'evaluate'])->name('evaluate');
         Route::post('{id}/start-evaluation', [SampleController::class, 'startEvaluation'])->name('start-evaluation');
         Route::post('{id}/submit-evaluation', [SampleController::class, 'submitEvaluation'])->name('submit-evaluation');
         
