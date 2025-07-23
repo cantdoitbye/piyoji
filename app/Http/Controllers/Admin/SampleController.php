@@ -83,7 +83,7 @@ class SampleController extends Controller
     /**
      * Display the specified sample
      */
-    public function show(int $id)
+    public function show($id)
     {
         $sample = $this->sampleService->getSampleById($id);
         

@@ -26,11 +26,13 @@ class Buyer extends Model
         'shipping_pincode',
         'preferred_tea_grades',
         'status',
+        'poc_ids',
         'remarks'
     ];
 
     protected $casts = [
         'preferred_tea_grades' => 'array',
+            'poc_ids' => 'array', // Add this
         'status' => 'boolean'
     ];
 
@@ -60,6 +62,11 @@ class Buyer extends Model
     {
         return $query->where('status', false);
     }
+
+    public function pocs()
+{
+    return $this->belongsToMany(Poc::class, null, null, null, null, null, 'poc_ids');
+}
 
     public function scopeBigBuyers($query)
     {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\Poc;
 use App\Services\BuyerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -54,11 +55,14 @@ class BuyerController extends BaseAdminController
 
     public function create(): View
     {
+            $pocs = Poc::active()->forBuyers()->orderBy('poc_name')->get(); 
+
         return view($this->viewPrefix . '.create', [
             'title' => 'Add New ' . $this->title,
             'buyerTypes' => $this->service->getBuyerTypeOptions(),
             'teaGrades' => $this->service->getTeaGradeOptions(),
-            'statusOptions' => $this->service->getStatusOptions()
+            'statusOptions' => $this->service->getStatusOptions(),
+            'pocs' => $pocs
         ]);
     }
 
@@ -91,13 +95,15 @@ class BuyerController extends BaseAdminController
         if (!$buyer) {
             abort(404);
         }
+    $pocs = Poc::active()->forBuyers()->orderBy('poc_name')->get();
 
         return view($this->viewPrefix . '.edit', [
             'buyer' => $buyer,
             'title' => 'Edit ' . $this->title,
             'buyerTypes' => $this->service->getBuyerTypeOptions(),
             'teaGrades' => $this->service->getTeaGradeOptions(),
-            'statusOptions' => $this->service->getStatusOptions()
+            'statusOptions' => $this->service->getStatusOptions(),
+            'pocs' => $pocs
         ]);
     }
 
@@ -120,6 +126,8 @@ class BuyerController extends BaseAdminController
             'preferred_tea_grades' => 'required|array|min:1',
             'preferred_tea_grades.*' => 'string|in:' . implode(',', array_keys($this->service->getTeaGradeOptions())),
             'status' => 'boolean',
+             'poc_ids' => 'nullable|array',
+        'poc_ids.*' => 'exists:pocs,id',
             'remarks' => 'nullable|string',
             'same_as_billing' => 'nullable|boolean'
         ]);

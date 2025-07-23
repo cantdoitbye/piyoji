@@ -59,7 +59,7 @@ class SampleRepository extends BaseRepository implements SampleRepositoryInterfa
             ->get();
     }
 
-    public function getSampleWithDetails(int $id)
+    public function getSampleWithDetails($id)
     {
         return $this->model->with([
             'seller',

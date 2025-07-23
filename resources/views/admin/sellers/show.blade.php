@@ -273,7 +273,7 @@ function toggleStatus(id, status) {
     showLoading();
     
     $.ajax({
-        url: `/admin/sellers/${id}/status`,
+        url: `/public/admin/sellers/${id}/status`,
         method: 'PATCH',
         data: { status: status },
         success: function(response) {
@@ -300,7 +300,7 @@ function deleteSeller(id) {
     showLoading();
     
     $.ajax({
-        url: `/admin/sellers/${id}`,
+        url: `/public/admin/sellers/${id}`,
         method: 'DELETE',
         success: function(response) {
             hideLoading();

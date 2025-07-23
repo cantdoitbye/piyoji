@@ -94,6 +94,28 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                         <div class="col-12 mb-3">
+                            <label for="poc_ids" class="form-label">
+                                <i class="fas fa-user-tie me-1"></i>Point of Contact (POC)
+                            </label>
+                            <select class="form-select @error('poc_ids') is-invalid @enderror" 
+                                    id="poc_ids" name="poc_ids[]" multiple>
+                                @foreach($pocs as $poc)
+                                    <option value="{{ $poc->id }}" 
+                                            {{ in_array($poc->id, old('poc_ids', $buyer->poc_ids ?? [])) ? 'selected' : '' }}>
+                                        {{ $poc->poc_name }} ({{ $poc->designation }}) - {{ $poc->poc_type_text }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('poc_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select one or more POCs who will handle this buyer. Only POCs available for buyers are shown.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Contact Information -->
@@ -439,6 +461,8 @@
 @endsection
 
 @push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
 .select2-container--bootstrap-5 .select2-selection {
     min-height: 38px;
@@ -588,10 +612,38 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(document).ready(function() {
     // Initialize Select2 for tea grades
       initializeTeaGradeSelector();
+
+       $('#poc_ids').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Select POCs...',
+        allowClear: true,
+        closeOnSelect: false,
+        templateResult: function(poc) {
+            if (!poc.id) return poc.text;
+            
+            var $result = $(
+                '<div class="d-flex justify-content-between align-items-center">' +
+                    '<div>' +
+                        '<div class="fw-bold">' + poc.text.split(' (')[0] + '</div>' +
+                        '<small class="text-muted">' + poc.text.split(' - ')[1] + '</small>' +
+                    '</div>' +
+                '</div>'
+            );
+            
+            return $result;
+        },
+        templateSelection: function(poc) {
+            if (!poc.id) return poc.text;
+            return poc.text.split(' (')[0]; // Show only name in selection
+        }
+    });
 
 $('#same_as_billing').change(function() {
         if (this.checked) {

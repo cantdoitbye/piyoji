@@ -27,7 +27,7 @@ class SampleService
     /**
      * Get sample by ID with detailed relationships
      */
-    public function getSampleById(int $id)
+    public function getSampleById($id)
     {
         return $this->sampleRepository->getSampleWithDetails($id);
     }

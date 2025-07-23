@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\Poc;
 use App\Services\SellerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -53,10 +54,13 @@ class SellerController extends BaseAdminController
 
     public function create(): View
     {
+            $pocs = Poc::active()->forSellers()->orderBy('poc_name')->get();
+
         return view($this->viewPrefix . '.create', [
             'title' => 'Add New ' . $this->title,
             'teaGrades' => $this->service->getTeaGradeOptions(),
-            'statusOptions' => $this->service->getStatusOptions()
+            'statusOptions' => $this->service->getStatusOptions(),
+            'pocs' => $pocs
         ]);
     }
 
@@ -89,12 +93,15 @@ class SellerController extends BaseAdminController
         if (!$seller) {
             abort(404);
         }
+            $pocs = Poc::active()->forBuyers()->orderBy('poc_name')->get(); // Add this line
+
 
         return view($this->viewPrefix . '.edit', [
             'seller' => $seller,
             'title' => 'Edit ' . $this->title,
             'teaGrades' => $this->service->getTeaGradeOptions(),
-            'statusOptions' => $this->service->getStatusOptions()
+            'statusOptions' => $this->service->getStatusOptions(),
+            'pocs' => $pocs
         ]);
     }
 
@@ -115,6 +122,8 @@ class SellerController extends BaseAdminController
             'tea_grades' => 'required|array|min:1',
             'tea_grades.*' => 'string|in:' . implode(',', array_keys($this->service->getTeaGradeOptions())),
             'status' => 'boolean',
+             'poc_ids' => 'nullable|array',
+        'poc_ids.*' => 'exists:pocs,id',
             'remarks' => 'nullable|string'
         ]);
     }

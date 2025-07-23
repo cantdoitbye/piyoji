@@ -23,12 +23,14 @@ class Seller extends Model
         'gstin',
         'pan',
         'tea_grades',
+        'poc_ids',
         'status',
         'remarks'
     ];
 
     protected $casts = [
         'tea_grades' => 'array',
+            'poc_ids' => 'array', // Add this
         'status' => 'boolean'
     ];
 
@@ -48,6 +50,11 @@ class Seller extends Model
     {
         return $query->where('status', true);
     }
+
+    public function pocs()
+{
+    return $this->belongsToMany(Poc::class, null, null, null, null, null, 'poc_ids');
+}
 
     public function scopeInactive($query)
     {

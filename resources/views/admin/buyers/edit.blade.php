@@ -102,6 +102,28 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                         <div class="col-12 mb-3">
+                            <label for="poc_ids" class="form-label">
+                                <i class="fas fa-user-tie me-1"></i>Point of Contact (POC)
+                            </label>
+                            <select class="form-select @error('poc_ids') is-invalid @enderror" 
+                                    id="poc_ids" name="poc_ids[]" multiple>
+                                @foreach($pocs as $poc)
+                                    <option value="{{ $poc->id }}" 
+                                            {{ in_array($poc->id, old('poc_ids', $buyer->poc_ids ?? [])) ? 'selected' : '' }}>
+                                        {{ $poc->poc_name }} ({{ $poc->designation }}) - {{ $poc->poc_type_text }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('poc_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select one or more POCs who will handle this buyer. Only POCs available for buyers are shown.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Contact Information -->
@@ -469,6 +491,8 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(document).ready(function() {
     // Initialize Select2 for tea grades

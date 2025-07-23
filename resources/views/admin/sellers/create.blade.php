@@ -87,6 +87,35 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                           <!-- POC Selection -->
+                        <div class="col-12 mb-3">
+                            <label for="poc_ids" class="form-label">
+                                <i class="fas fa-user-tie me-1"></i>Point of Contact (POC)
+                            </label>
+                            <select class="form-select @error('poc_ids') is-invalid @enderror" 
+                                    id="poc_ids" name="poc_ids[]" multiple>
+                                <option value="">Select POCs...</option>
+                                @if(isset($pocs) && $pocs->count() > 0)
+                                    @foreach($pocs as $poc)
+                                        <option value="{{ $poc->id }}" 
+                                                {{ in_array($poc->id, old('poc_ids', $seller->poc_ids ?? [])) ? 'selected' : '' }}>
+                                            {{ $poc->poc_name }}{{ $poc->designation ? ' (' . $poc->designation . ')' : '' }} - {{ $poc->poc_type_text }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @error('poc_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select one or more POCs who will handle this seller. 
+                                @if(!isset($pocs) || $pocs->count() == 0)
+                                    <span class="text-warning">No POCs available. Please create POCs first.</span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Contact Information -->
@@ -368,6 +397,8 @@
 @endsection
 
 @push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
 .select2-container--bootstrap-5 .select2-selection {
     min-height: 38px;
@@ -516,6 +547,8 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(document).ready(function() {
     // Initialize Select2 for tea grades
@@ -525,6 +558,15 @@ $(document).ready(function() {
      $('#gstin').on('input', function() {
         this.value = this.value.toUpperCase();
     });
+
+   $('#poc_ids').select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'Select POCs...',
+    allowClear: true,
+    closeOnSelect: false
+});
+
 
     // Format PAN input
     $('#pan').on('input', function() {

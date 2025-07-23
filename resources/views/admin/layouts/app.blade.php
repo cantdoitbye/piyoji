@@ -362,12 +362,12 @@
                             </a>
                         </li>
                         
-                        <li class="nav-item">
+                        {{-- <li class="nav-item">
                             <a class="nav-link" href="{{ route('admin.samples.pending-evaluations') }}">
                                 <i class="fas fa-clipboard-check"></i>
                                 Sample Evaluation
                             </a>
-                        </li>
+                        </li> --}}
                         
                         <li class="nav-item">
                             <a class="nav-link" href="#">

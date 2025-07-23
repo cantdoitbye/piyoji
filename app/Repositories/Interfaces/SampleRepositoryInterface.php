@@ -13,7 +13,7 @@ interface SampleRepositoryInterface extends BaseRepositoryInterface
     
     public function searchSamples(string $query);
     
-    public function getSampleWithDetails(int $id);
+    public function getSampleWithDetails($id);
     
     public function checkSampleIdExists(string $sampleId, int $excludeId = null);
     

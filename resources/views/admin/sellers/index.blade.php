@@ -328,7 +328,7 @@ function toggleStatus(id, status) {
     showLoading();
     
     $.ajax({
-        url: `/admin/sellers/${id}/status`,
+        url: `/public/admin/sellers/${id}/status`,
         method: 'PATCH',
         // data: { status: status },
           headers: {
