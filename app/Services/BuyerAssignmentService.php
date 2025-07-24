@@ -40,60 +40,68 @@ class BuyerAssignmentService
     /**
      * Assign sample to multiple buyers
      */
-    public function assignSampleToBuyers(int $sampleId, array $buyerData)
-    {
-        try {
-            DB::beginTransaction();
 
-            $sample = $this->sampleRepository->find($sampleId);
-            if (!$sample) {
-                throw new \Exception('Sample not found');
+  
+/**
+ * Assign sample to multiple buyers
+ */
+public function assignSampleToBuyers(int $sampleId, array $buyerData)
+{
+    try {
+        DB::beginTransaction();
+
+        $sample = $this->sampleRepository->find($sampleId);
+        if (!$sample) {
+            throw new \Exception('Sample not found');
+        }
+
+        // Allow both approved and assigned_to_buyers status
+        if (!in_array($sample->status, ['approved', 'assigned_to_buyers'])) {
+            throw new \Exception('Only approved or assigned samples can have buyer assignments managed');
+        }
+
+        $assignments = [];
+        $userId = Auth::id();
+
+        foreach ($buyerData as $data) {
+            // Validate buyer exists
+            $buyer = $this->buyerRepository->find($data['buyer_id']);
+            if (!$buyer) {
+                throw new \Exception("Buyer with ID {$data['buyer_id']} not found");
             }
 
-            if ($sample->status !== Sample::STATUS_APPROVED) {
-                throw new \Exception('Only approved samples can be assigned to buyers');
+            // Check if already assigned
+            if ($this->assignmentRepository->checkExistingAssignment($sampleId, $data['buyer_id'])) {
+                throw new \Exception("Sample already assigned to buyer: {$buyer->buyer_name}");
             }
 
-            $assignments = [];
-            $userId = Auth::id();
+            $assignments[] = [
+                'buyer_id' => $data['buyer_id'],
+                'remarks' => $data['remarks'] ?? null,
+                'assigned_by' => $userId
+            ];
+        }
 
-            foreach ($buyerData as $data) {
-                // Validate buyer exists
-                $buyer = $this->buyerRepository->find($data['buyer_id']);
-                if (!$buyer) {
-                    throw new \Exception("Buyer with ID {$data['buyer_id']} not found");
-                }
+        // Create bulk assignments
+        $this->assignmentRepository->bulkAssignSample($sampleId, $assignments);
 
-                // Check if already assigned
-                if ($this->assignmentRepository->checkExistingAssignment($sampleId, $data['buyer_id'])) {
-                    throw new \Exception("Sample already assigned to buyer: {$buyer->buyer_name}");
-                }
-
-                $assignments[] = [
-                    'buyer_id' => $data['buyer_id'],
-                    'remarks' => $data['remarks'] ?? null,
-                    'assigned_by' => $userId
-                ];
-            }
-
-            // Create bulk assignments
-            $this->assignmentRepository->bulkAssignSample($sampleId, $assignments);
-
-            // Update sample status
+        // Update sample status to assigned_to_buyers if it's not already
+        if ($sample->status !== Sample::STATUS_ASSIGNED_TO_BUYERS) {
             $this->sampleRepository->update($sampleId, [
                 'status' => Sample::STATUS_ASSIGNED_TO_BUYERS,
                 'updated_by' => $userId
             ]);
-
-            DB::commit();
-
-            return $this->sampleRepository->getSampleWithDetails($sampleId);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
         }
+
+        DB::commit();
+
+        return $this->sampleRepository->find($sampleId);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
     }
+}
 
     /**
      * Get assigned samples with buyer details

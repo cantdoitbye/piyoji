@@ -21,6 +21,11 @@ class BuyerService implements BaseServiceInterface
         return $this->buyerRepository->getWithFilters($filters);
     }
 
+      public function getActiveBuyers()
+    {
+        return $this->buyerRepository->getActiveBuyersList();
+    }
+
     public function show(int $id)
     {
         return $this->buyerRepository->find($id);

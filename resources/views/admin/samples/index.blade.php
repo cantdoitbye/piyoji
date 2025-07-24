@@ -318,6 +318,18 @@
                                                     <i class="fas fa-clipboard-check"></i>
                                                 </a>
                                             @endif
+
+                                             @if($sample->status === 'approved')
+        <a href="{{ route('admin.samples.assign-buyers', $sample->id) }}" 
+           class="btn btn-sm btn-success" title="Assign to Buyers">
+            <i class="fas fa-users"></i>
+        </a>
+    @elseif($sample->status === 'assigned_to_buyers')
+        <a href="{{ route('admin.samples.assign-buyers', $sample->id) }}" 
+           class="btn btn-sm btn-outline-success" title="Manage Assignments">
+            <i class="fas fa-edit"></i>
+        </a>
+    @endif
                                             
                                             <a href="{{ route('admin.samples.edit', $sample->id) }}" 
                                                class="btn btn-sm btn-outline-secondary" title="Edit">

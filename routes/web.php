@@ -201,6 +201,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('bulk-upload', [SampleController::class, 'bulkUpload'])->name('bulk-upload');
         Route::post('bulk-upload', [SampleController::class, 'processBulkUpload'])->name('process-bulk-upload');
         Route::get('export', [SampleController::class, 'export'])->name('export');
+   
+           // Buyer Assignment routes (Module 2.3)
+        Route::get('ready-for-assignment', [SampleController::class, 'readyForAssignment'])->name('ready-for-assignment');
+        Route::get('assigned-samples', [SampleController::class, 'assignedSamples'])->name('assigned-samples');
+        Route::get('awaiting-dispatch', [SampleController::class, 'awaitingDispatch'])->name('awaiting-dispatch');
+        
+        Route::get('{id}/assign-buyers', [SampleController::class, 'assignToBuyers'])->name('assign-buyers');
+        Route::post('{id}/assign-buyers', [SampleController::class, 'storeBuyerAssignments'])->name('store-buyer-assignments');
+        
+        // AJAX routes for assignment management
+        Route::patch('assignments/{assignmentId}/dispatch-status', [SampleController::class, 'updateDispatchStatus'])->name('update-dispatch-status');
+        Route::delete('assignments/{assignmentId}', [SampleController::class, 'removeAssignment'])->name('remove-assignment');
+   
     });
 
      Route::resource('pocs', App\Http\Controllers\Admin\PocController::class);
@@ -225,39 +238,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('api/admin')->name('api.admin.')->middleware(['auth:admin'])->group(function () {
-    
-    // Sellers API
-    Route::prefix('sellers')->name('sellers.')->group(function () {
-        Route::get('search', [SellerController::class, 'search'])->name('search');
-        Route::get('select-options', [SellerController::class, 'getForSelect'])->name('select-options');
-    });
-    
-    // Buyers API
-    Route::prefix('buyers')->name('buyers.')->group(function () {
-        Route::get('search', [BuyerController::class, 'search'])->name('search');
-        Route::get('select-options', [BuyerController::class, 'getForSelect'])->name('select-options');
-    });
-    
-    // Couriers API
-    Route::prefix('couriers')->name('couriers.')->group(function () {
-        Route::get('search', [CourierController::class, 'search'])->name('search');
-        Route::get('select-options', [CourierController::class, 'getForSelect'])->name('select-options');
-    });
-
-        Route::get('ready-for-assignment', [SampleController::class, 'readyForAssignment'])->name('ready-for-assignment');
-        Route::get('assigned-samples', [SampleController::class, 'assignedSamples'])->name('assigned-samples');
-        Route::get('awaiting-dispatch', [SampleController::class, 'awaitingDispatch'])->name('awaiting-dispatch');
-        
-        Route::get('{id}/assign-buyers', [SampleController::class, 'assignToBuyers'])->name('assign-buyers');
-        Route::post('{id}/assign-buyers', [SampleController::class, 'storeBuyerAssignments'])->name('store-buyer-assignments');
-        
-        // AJAX routes for assignment management
-        Route::patch('assignments/{assignmentId}/dispatch-status', [SampleController::class, 'updateDispatchStatus'])->name('update-dispatch-status');
-        Route::delete('assignments/{assignmentId}', [SampleController::class, 'removeAssignment'])->name('remove-assignment');
-   
-    
-});
 
 /*
 |--------------------------------------------------------------------------

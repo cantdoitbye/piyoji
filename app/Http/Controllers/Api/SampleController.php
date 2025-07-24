@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\BuyerAssignmentService;
+use App\Services\BuyerService;
 use App\Services\SampleService;
 use App\Services\SellerService;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class SampleController extends Controller
 {
     public function __construct(
         protected SampleService $sampleService,
+                protected BuyerService $buyerService,
         protected SellerService $sellerService,
         protected BuyerAssignmentService $buyerAssignmentService
     ) {}
@@ -81,6 +83,31 @@ class SampleController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve sellers list: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+      public function buyers()
+    {
+        try {
+            $buyers = $this->buyerService->index();
+
+            if (!$buyers) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Buyers not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $buyers,
+                'message' => 'Buyers list retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve buyers list: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -836,7 +863,7 @@ public function removeAssignmentApi(Request $request, $assignmentId)
 public function getActiveBuyersApi(Request $request)
 {
     try {
-        $buyers = $this->buyerRepository->getActiveBuyers();
+        $buyers = $this->buyerService->getActiveBuyers();
 
         return response()->json([
             'success' => true,

@@ -93,14 +93,40 @@ class SampleController extends Controller
      */
     public function show($id)
     {
-        $sample = $this->sampleService->getSampleById($id);
+        // $sample = $this->sampleService->getSampleById($id);
+        
+        // if (!$sample) {
+        //     return redirect()->route('admin.samples.index')
+        //         ->with('error', 'Sample not found.');
+        // }
+
+        // return view('admin.samples.show', compact('sample'));
+
+         try {
+        // Load sample with relationships using with() method
+        $sample = $this->sampleRepository->find($id);
         
         if (!$sample) {
             return redirect()->route('admin.samples.index')
-                ->with('error', 'Sample not found.');
+                           ->with('error', 'Sample not found');
         }
 
+        // Load relationships
+        $sample->load([
+            'seller',
+            'receivedBy',
+            'evaluatedBy',
+            'buyerAssignments.buyer',
+            'buyerAssignments.assignedBy'
+        ]);
+
         return view('admin.samples.show', compact('sample'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('admin.samples.index')
+                       ->with('error', 'Error loading sample: ' . $e->getMessage());
+    }
+
     }
 
     /**
@@ -485,20 +511,29 @@ class SampleController extends Controller
 public function assignToBuyers($id)
 {
     try {
-        $sample = $this->sampleRepository->getSampleWithDetails($id);
+        $sample = $this->sampleRepository->find($id);
         
         if (!$sample) {
             return redirect()->route('admin.samples.index')
                            ->with('error', 'Sample not found');
         }
 
-        if ($sample->status !== Sample::STATUS_APPROVED) {
+        // Allow both approved and assigned_to_buyers status
+        if (!in_array($sample->status, ['approved', 'assigned_to_buyers'])) {
             return redirect()->route('admin.samples.show', $id)
-                           ->with('error', 'Only approved samples can be assigned to buyers');
+                           ->with('error', 'Only approved or assigned samples can be managed for buyer assignment');
         }
 
-        $buyers = $this->buyerRepository->getActiveBuyers();
-        $existingAssignments = $this->buyerAssignmentService->getSampleAssignments($id);
+        // Load relationships
+        $sample->load([
+            'seller',
+            'evaluatedBy',
+            'buyerAssignments.buyer',
+            'buyerAssignments.assignedBy'
+        ]);
+
+        $buyers = $this->buyerRepository->getActiveBuyersList();
+        $existingAssignments = $sample->buyerAssignments;
 
         return view('admin.samples.assign-buyers', compact('sample', 'buyers', 'existingAssignments'));
 

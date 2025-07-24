@@ -52,6 +52,7 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 
 
         Route::get('sellers', [SampleController::class, 'sellers']);
+        Route::get('buyers', [SampleController::class, 'buyers']);
 
      Route::prefix('samples')->name('samples.')->group(function () {
         Route::get('/', [SampleController::class, 'index'])->name('index');

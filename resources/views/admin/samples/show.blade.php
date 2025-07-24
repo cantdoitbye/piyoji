@@ -172,6 +172,91 @@
                 </div>
             </div>
 
+
+            <!-- Buyer Assignments Section -->
+           <!-- Add this section after the Evaluation Results card in your existing sample show view -->
+            
+            <!-- Buyer Assignments Section -->
+            @if($sample->status === 'assigned_to_buyers' && $sample->buyerAssignments && $sample->buyerAssignments->count() > 0)
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Buyer Assignments ({{ $sample->buyerAssignments->count() }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Buyer</th>
+                                        <th>Type</th>
+                                        <th>Assignment Date</th>
+                                        <th>Dispatch Status</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($sample->buyerAssignments as $assignment)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $assignment->buyer->buyer_name }}</strong>
+                                            <br><small class="text-muted">{{ $assignment->buyer->contact_person }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $assignment->buyer->buyer_type === 'big' ? 'bg-primary' : 'bg-info' }}">
+                                                {{ ucfirst($assignment->buyer->buyer_type) }} Buyer
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{ $assignment->assigned_at->format('M d, Y H:i') }}
+                                            <br><small class="text-muted">by {{ $assignment->assignedBy->name }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                @if($assignment->dispatch_status === 'awaiting_dispatch') bg-warning
+                                                @elseif($assignment->dispatch_status === 'dispatched') bg-info
+                                                @elseif($assignment->dispatch_status === 'delivered') bg-success
+                                                @else bg-secondary
+                                                @endif">
+                                                {{ ucwords(str_replace('_', ' ', $assignment->dispatch_status)) }}
+                                            </span>
+                                            @if($assignment->tracking_id)
+                                            <br><small class="text-info">Tracking: {{ $assignment->tracking_id }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($assignment->assignment_remarks)
+                                                {{ Str::limit($assignment->assignment_remarks, 50) }}
+                                            @else
+                                                <small class="text-muted">No remarks</small>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-end mt-3">
+                            <a href="{{ route('admin.samples.assign-buyers', $sample->id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-1"></i>Manage Assignments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @elseif($sample->status === 'approved')
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Ready for Buyer Assignment</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="mb-3">This sample has been approved and is ready to be assigned to buyers.</p>
+                        <a href="{{ route('admin.samples.assign-buyers', $sample->id) }}" class="btn btn-success">
+                            <i class="fas fa-users me-1"></i>Assign to Buyers
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <!-- Evaluation Results -->
             @if($sample->evaluation_status === 'completed')
                 <div class="card mb-4">

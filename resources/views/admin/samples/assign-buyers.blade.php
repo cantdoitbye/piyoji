@@ -162,45 +162,18 @@
         </div>
     </div>
 </div>
-
-<!-- Buyer Assignment Row Template -->
-<template id="buyerRowTemplate">
-    <div class="buyer-assignment-row border rounded p-3 mb-3">
-        <div class="row">
-            <div class="col-md-6">
-                <label class="form-label">Buyer *</label>
-                <select name="buyers[INDEX][buyer_id]" class="form-select buyer-select" required>
-                    <option value="">Select Buyer</option>
-                    @foreach($buyers as $buyer)
-                    <option value="{{ $buyer->id }}">{{ $buyer->buyer_name }} ({{ $buyer->buyer_type_text }})</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Remarks</label>
-                <div class="input-group">
-                    <textarea name="buyers[INDEX][remarks]" class="form-control" rows="2" 
-                              placeholder="Optional remarks for this buyer"></textarea>
-                    <button type="button" class="btn btn-outline-danger remove-buyer-btn">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
 @endsection
 
 @push('scripts')
 <script>
 let buyerIndex = 0;
 let selectedBuyers = new Set();
+let buyersData = @json($buyers); // Pass buyers data to JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     const addBuyerBtn = document.getElementById('addBuyerBtn');
     const buyerAssignments = document.getElementById('buyerAssignments');
     const submitBtn = document.getElementById('submitBtn');
-    const template = document.getElementById('buyerRowTemplate');
 
     // Add buyer row
     addBuyerBtn.addEventListener('click', function() {
@@ -228,8 +201,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function addBuyerRow(selectedBuyerId = null, selectedBuyerName = null) {
-        const clone = template.content.cloneNode(true);
-        const html = clone.innerHTML.replace(/INDEX/g, buyerIndex);
+        // Create buyer options HTML
+        let buyerOptions = '<option value="">Select Buyer</option>';
+        buyersData.forEach(buyer => {
+            buyerOptions += `<option value="${buyer.id}">${buyer.buyer_name} (${buyer.buyer_type === 'big' ? 'Big Buyer' : 'Small Buyer'})</option>`;
+        });
+
+        // Create the buyer row HTML
+        const html = `
+            <div class="buyer-assignment-row border rounded p-3 mb-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Buyer *</label>
+                        <select name="buyers[${buyerIndex}][buyer_id]" class="form-select buyer-select" required>
+                            ${buyerOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Remarks</label>
+                        <div class="input-group">
+                            <textarea name="buyers[${buyerIndex}][remarks]" class="form-control" rows="2" 
+                                      placeholder="Optional remarks for this buyer"></textarea>
+                            <button type="button" class="btn btn-outline-danger remove-buyer-btn">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
         
         const div = document.createElement('div');
         div.innerHTML = html;
