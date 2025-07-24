@@ -271,4 +271,57 @@ class Sample extends Model
         return $query->where('overall_score', '>=', $minScore)
             ->orderBy('overall_score', 'desc');
     }
+
+
+  
+/**
+ * Get buyer assignments for this sample (Module 2.3)
+ */
+public function buyerAssignments()
+{
+    return $this->hasMany(SampleBuyerAssignment::class);
+}
+
+/**
+ * Get buyers assigned to this sample
+ */
+public function assignedBuyers()
+{
+    return $this->belongsToMany(Buyer::class, 'sample_buyer_assignments')
+                ->withPivot(['assignment_remarks', 'dispatch_status', 'assigned_at', 'assigned_by', 'dispatched_at', 'tracking_id'])
+                ->withTimestamps();
+}
+
+/**
+ * Check if sample is assigned to any buyers
+ */
+public function isAssignedToBuyers()
+{
+    return $this->buyerAssignments()->exists();
+}
+
+/**
+ * Get count of buyers assigned to this sample
+ */
+public function getAssignedBuyersCountAttribute()
+{
+    return $this->buyerAssignments()->count();
+}
+
+/**
+ * Scope: Samples that are ready for buyer assignment (approved)
+ */
+public function scopeReadyForBuyerAssignment($query)
+{
+    return $query->where('status', self::STATUS_APPROVED)
+                 ->where('evaluation_status', self::EVALUATION_COMPLETED);
+}
+
+/**
+ * Scope: Samples already assigned to buyers
+ */
+public function scopeAssignedToBuyers($query)
+{
+    return $query->where('status', self::STATUS_ASSIGNED_TO_BUYERS);
+}
 }

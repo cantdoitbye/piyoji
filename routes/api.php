@@ -76,7 +76,17 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::get('search', [SampleController::class, 'search'])->name('search');
         Route::get('sellers', [SampleController::class, 'getSellers'])->name('sellers');
         Route::get('tea-grades', [SampleController::class, 'getTeaGrades'])->name('tea-grades');
+   
+              Route::get('ready-for-assignment', [SampleController::class, 'readyForAssignmentApi'])->name('ready-for-assignment-api');
+        Route::get('assigned-samples', [SampleController::class, 'assignedSamplesApi'])->name('assigned-samples-api');
+        Route::get('awaiting-dispatch', [SampleController::class, 'awaitingDispatchApi'])->name('awaiting-dispatch-api');
+        
+        Route::post('{id}/assign-buyers', [SampleController::class, 'storeBuyerAssignmentsApi'])->name('assign-buyers-api');
+        Route::get('{id}/assignments', [SampleController::class, 'getSampleAssignmentsApi'])->name('get-assignments-api');
+   
     });
+
+    
     
    
     

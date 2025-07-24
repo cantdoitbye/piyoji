@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BuyerAssignmentService;
 use App\Services\SampleService;
 use App\Services\SellerService;
 use Illuminate\Http\Request;
@@ -13,7 +14,8 @@ class SampleController extends Controller
 {
     public function __construct(
         protected SampleService $sampleService,
-        protected SellerService $sellerService
+        protected SellerService $sellerService,
+        protected BuyerAssignmentService $buyerAssignmentService
     ) {}
 
     /**
@@ -495,4 +497,404 @@ class SampleController extends Controller
             ], 500);
         }
     }
+
+  
+/**
+ * API: Get samples ready for assignment (Mobile App)
+ */
+public function readyForAssignmentApi(Request $request)
+{
+    try {
+        $samples = $this->buyerAssignmentService->getSamplesReadyForAssignment();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'samples' => $samples->map(function ($sample) {
+                    return [
+                        'id' => $sample->id,
+                        'sample_id' => $sample->sample_id,
+                        'sample_name' => $sample->sample_name,
+                        'batch_id' => $sample->batch_id,
+                        'seller' => [
+                            'id' => $sample->seller->id,
+                            'name' => $sample->seller->seller_name,
+                            'tea_estate' => $sample->seller->tea_estate
+                        ],
+                        'scores' => [
+                            'overall' => $sample->overall_score,
+                            'aroma' => $sample->aroma_score,
+                            'liquor' => $sample->liquor_score,
+                            'appearance' => $sample->appearance_score
+                        ],
+                        'evaluation' => [
+                            'evaluated_at' => $sample->evaluated_at?->toISOString(),
+                            'evaluated_by' => $sample->evaluatedBy?->name,
+                            'comments' => $sample->evaluation_comments
+                        ],
+                        'status' => $sample->status,
+                        'created_at' => $sample->created_at->toISOString()
+                    ];
+                })->values(),
+                'count' => $samples->count()
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching samples: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * API: Get assigned samples (Mobile App)
+ */
+public function assignedSamplesApi(Request $request)
+{
+    try {
+        $samples = $this->buyerAssignmentService->getAssignedSamples();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'samples' => $samples->map(function ($sample) {
+                    return [
+                        'id' => $sample->id,
+                        'sample_id' => $sample->sample_id,
+                        'sample_name' => $sample->sample_name,
+                        'batch_id' => $sample->batch_id,
+                        'seller' => [
+                            'id' => $sample->seller->id,
+                            'name' => $sample->seller->seller_name,
+                            'tea_estate' => $sample->seller->tea_estate
+                        ],
+                        'overall_score' => $sample->overall_score,
+                        'assignments' => $sample->buyerAssignments->map(function ($assignment) {
+                            return [
+                                'id' => $assignment->id,
+                                'buyer' => [
+                                    'id' => $assignment->buyer->id,
+                                    'name' => $assignment->buyer->buyer_name,
+                                    'type' => $assignment->buyer->buyer_type,
+                                    'email' => $assignment->buyer->email,
+                                    'phone' => $assignment->buyer->phone
+                                ],
+                                'assignment_remarks' => $assignment->assignment_remarks,
+                                'dispatch_status' => $assignment->dispatch_status,
+                                'dispatch_status_text' => $assignment->dispatch_status_text,
+                                'assigned_at' => $assignment->assigned_at->toISOString(),
+                                'assigned_by' => $assignment->assignedBy->name,
+                                'dispatched_at' => $assignment->dispatched_at?->toISOString(),
+                                'tracking_id' => $assignment->tracking_id
+                            ];
+                        }),
+                        'assignments_count' => $sample->buyerAssignments->count(),
+                        'status' => $sample->status
+                    ];
+                })->values(),
+                'count' => $samples->count()
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching assigned samples: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * API: Get assignments awaiting dispatch (Mobile App)
+ */
+public function awaitingDispatchApi(Request $request)
+{
+    try {
+        $assignments = $this->buyerAssignmentService->getAssignmentsAwaitingDispatch();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'assignments' => $assignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->id,
+                        'sample' => [
+                            'id' => $assignment->sample->id,
+                            'sample_id' => $assignment->sample->sample_id,
+                            'sample_name' => $assignment->sample->sample_name,
+                            'batch_id' => $assignment->sample->batch_id,
+                            'sample_weight' => $assignment->sample->sample_weight,
+                            'overall_score' => $assignment->sample->overall_score,
+                            'seller' => [
+                                'id' => $assignment->sample->seller->id,
+                                'name' => $assignment->sample->seller->seller_name,
+                                'tea_estate' => $assignment->sample->seller->tea_estate
+                            ]
+                        ],
+                        'buyer' => [
+                            'id' => $assignment->buyer->id,
+                            'name' => $assignment->buyer->buyer_name,
+                            'type' => $assignment->buyer->buyer_type,
+                            'email' => $assignment->buyer->email,
+                            'phone' => $assignment->buyer->phone,
+                            'shipping_address' => $assignment->buyer->shipping_address,
+                            'shipping_city' => $assignment->buyer->shipping_city,
+                            'shipping_state' => $assignment->buyer->shipping_state,
+                            'shipping_pincode' => $assignment->buyer->shipping_pincode
+                        ],
+                        'assignment_remarks' => $assignment->assignment_remarks,
+                        'dispatch_status' => $assignment->dispatch_status,
+                        'assigned_at' => $assignment->assigned_at->toISOString(),
+                        'assigned_by' => $assignment->assignedBy->name,
+                        'days_pending' => $assignment->assigned_at->diffInDays(now())
+                    ];
+                })->values(),
+                'count' => $assignments->count(),
+                'statistics' => $this->buyerAssignmentService->getAssignmentStatistics()
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching assignments: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * API: Assign sample to buyers (Mobile App)
+ */
+public function storeBuyerAssignmentsApi(Request $request, $id)
+{
+    $request->validate([
+        'buyers' => 'required|array|min:1',
+        'buyers.*.buyer_id' => 'required|exists:buyers,id',
+        'buyers.*.remarks' => 'nullable|string|max:500'
+    ]);
+
+    try {
+        $sample = $this->buyerAssignmentService->assignSampleToBuyers($id, $request->input('buyers'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sample successfully assigned to ' . count($request->input('buyers')) . ' buyer(s)',
+            'data' => [
+                'sample' => [
+                    'id' => $sample->id,
+                    'sample_id' => $sample->sample_id,
+                    'sample_name' => $sample->sample_name,
+                    'status' => $sample->status,
+                    'assignments_count' => $sample->buyerAssignments->count()
+                ]
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error assigning sample: ' . $e->getMessage()
+        ], 400);
+    }
+}
+
+/**
+ * API: Get sample assignments (Mobile App)
+ */
+public function getSampleAssignmentsApi(Request $request, $id)
+{
+    try {
+        $sample = $this->sampleRepository->getSampleWithDetails($id);
+        if (!$sample) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sample not found'
+            ], 404);
+        }
+
+        $assignments = $this->buyerAssignmentService->getSampleAssignments($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'sample' => [
+                    'id' => $sample->id,
+                    'sample_id' => $sample->sample_id,
+                    'sample_name' => $sample->sample_name,
+                    'batch_id' => $sample->batch_id,
+                    'overall_score' => $sample->overall_score,
+                    'seller' => [
+                        'name' => $sample->seller->seller_name,
+                        'tea_estate' => $sample->seller->tea_estate
+                    ]
+                ],
+                'assignments' => $assignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->id,
+                        'buyer' => [
+                            'id' => $assignment->buyer->id,
+                            'name' => $assignment->buyer->buyer_name,
+                            'type' => $assignment->buyer->buyer_type,
+                            'email' => $assignment->buyer->email,
+                            'phone' => $assignment->buyer->phone
+                        ],
+                        'assignment_remarks' => $assignment->assignment_remarks,
+                        'dispatch_status' => $assignment->dispatch_status,
+                        'dispatch_status_text' => $assignment->dispatch_status_text,
+                        'assigned_at' => $assignment->assigned_at->toISOString(),
+                        'assigned_by' => $assignment->assignedBy->name,
+                        'dispatched_at' => $assignment->dispatched_at?->toISOString(),
+                        'tracking_id' => $assignment->tracking_id,
+                        'can_remove' => $assignment->dispatch_status === 'awaiting_dispatch'
+                    ];
+                })
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching assignments: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * API: Update dispatch status (Mobile App)
+ */
+public function updateDispatchStatusApi(Request $request, $assignmentId)
+{
+    $request->validate([
+        'status' => 'required|in:dispatched,delivered,feedback_received',
+        'tracking_id' => 'nullable|string|max:100',
+        'delivery_notes' => 'nullable|string|max:500'
+    ]);
+
+    try {
+        $additionalData = [];
+        if ($request->filled('tracking_id')) {
+            $additionalData['tracking_id'] = $request->input('tracking_id');
+        }
+        if ($request->filled('delivery_notes')) {
+            $additionalData['delivery_notes'] = $request->input('delivery_notes');
+        }
+
+        $assignment = $this->buyerAssignmentService->updateDispatchStatus(
+            $assignmentId, 
+            $request->input('status'),
+            $additionalData
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dispatch status updated successfully',
+            'data' => [
+                'assignment' => [
+                    'id' => $assignment->id,
+                    'dispatch_status' => $assignment->dispatch_status,
+                    'dispatch_status_text' => $assignment->dispatch_status_text,
+                    'tracking_id' => $assignment->tracking_id,
+                    'dispatched_at' => $assignment->dispatched_at?->toISOString()
+                ]
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
+
+/**
+ * API: Remove assignment (Mobile App)
+ */
+public function removeAssignmentApi(Request $request, $assignmentId)
+{
+    try {
+        $this->buyerAssignmentService->removeAssignment($assignmentId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assignment removed successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
+
+/**
+ * API: Get active buyers for assignment (Mobile App)
+ */
+public function getActiveBuyersApi(Request $request)
+{
+    try {
+        $buyers = $this->buyerRepository->getActiveBuyers();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'buyers' => $buyers->map(function ($buyer) {
+                    return [
+                        'id' => $buyer->id,
+                        'buyer_name' => $buyer->buyer_name,
+                        'buyer_type' => $buyer->buyer_type,
+                        'buyer_type_text' => $buyer->buyer_type_text,
+                        'contact_person' => $buyer->contact_person,
+                        'email' => $buyer->email,
+                        'phone' => $buyer->phone,
+                        'preferred_tea_grades' => $buyer->preferred_tea_grades,
+                        'shipping_address' => $buyer->shipping_address,
+                        'shipping_city' => $buyer->shipping_city,
+                        'shipping_state' => $buyer->shipping_state,
+                        'shipping_pincode' => $buyer->shipping_pincode
+                    ];
+                })->values(),
+                'count' => $buyers->count()
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching buyers: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * API: Get assignment statistics (Mobile App)
+ */
+public function getAssignmentStatisticsApi(Request $request)
+{
+    try {
+        $statistics = $this->buyerAssignmentService->getAssignmentStatistics();
+        
+        // Add additional mobile-specific statistics
+        $readySamples = $this->buyerAssignmentService->getSamplesReadyForAssignment()->count();
+        $assignedSamples = $this->buyerAssignmentService->getAssignedSamples()->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($statistics, [
+                'ready_for_assignment' => $readySamples,
+                'assigned_samples' => $assignedSamples,
+                'last_updated' => now()->toISOString()
+            ])
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching statistics: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

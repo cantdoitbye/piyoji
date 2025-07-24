@@ -592,9 +592,8 @@ $(document).ready(function() {
         // }
         
         // Validate tea grades selection
-        const teaGrades = $('#tea_grades').val();
-        if (!teaGrades || teaGrades.length === 0) {
-            showError('tea_grades', 'Please select at least one tea grade');
+          if (!validateTeaGrades()) {
+            showError('preferred_tea_grades', 'Please select at least one preferred tea grade');
             isValid = false;
         }
         

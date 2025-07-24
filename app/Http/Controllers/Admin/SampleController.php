@@ -11,12 +11,20 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SamplesImport;
+use App\Services\BuyerAssignmentService;
+use App\Repositories\Interfaces\BuyerRepositoryInterface;
+use App\Repositories\Interfaces\SampleRepositoryInterface;
+use App\Repositories\Interfaces\SellerRepositoryInterface;
 
 class SampleController extends Controller
 {
     public function __construct(
         protected SampleService $sampleService,
-        protected SellerService $sellerService
+        protected SellerService $sellerService,
+        protected   SampleRepositoryInterface $sampleRepository,
+    protected SellerRepositoryInterface $sellerRepository,
+        protected   BuyerAssignmentService $buyerAssignmentService,
+        protected     BuyerRepositoryInterface $buyerRepository
     ) {
         // Middleware is already applied in routes, no need to add here
     }
@@ -468,4 +476,166 @@ class SampleController extends Controller
             'evaluation_comments' => 'nullable|string|max:1000'
         ]);
     }
+
+
+    
+/**
+ * Show buyer assignment page (Module 2.3)
+ */
+public function assignToBuyers($id)
+{
+    try {
+        $sample = $this->sampleRepository->getSampleWithDetails($id);
+        
+        if (!$sample) {
+            return redirect()->route('admin.samples.index')
+                           ->with('error', 'Sample not found');
+        }
+
+        if ($sample->status !== Sample::STATUS_APPROVED) {
+            return redirect()->route('admin.samples.show', $id)
+                           ->with('error', 'Only approved samples can be assigned to buyers');
+        }
+
+        $buyers = $this->buyerRepository->getActiveBuyers();
+        $existingAssignments = $this->buyerAssignmentService->getSampleAssignments($id);
+
+        return view('admin.samples.assign-buyers', compact('sample', 'buyers', 'existingAssignments'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('admin.samples.index')
+                       ->with('error', 'Error loading buyer assignment page: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Store buyer assignments
+ */
+public function storeBuyerAssignments(Request $request, $id)
+{
+    $request->validate([
+        'buyers' => 'required|array|min:1',
+        'buyers.*.buyer_id' => 'required|exists:buyers,id',
+        'buyers.*.remarks' => 'nullable|string|max:500'
+    ]);
+
+    try {
+        $sample = $this->buyerAssignmentService->assignSampleToBuyers($id, $request->input('buyers'));
+
+        return redirect()->route('admin.samples.show', $id)
+                       ->with('success', 'Sample successfully assigned to ' . count($request->input('buyers')) . ' buyer(s)');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+                       ->withInput()
+                       ->with('error', 'Error assigning sample: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Show samples ready for buyer assignment
+ */
+public function readyForAssignment()
+{
+    try {
+        $samples = $this->buyerAssignmentService->getSamplesReadyForAssignment();
+        $statistics = $this->buyerAssignmentService->getAssignmentStatistics();
+
+        return view('admin.samples.ready-for-assignment', compact('samples', 'statistics'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('admin.samples.index')
+                       ->with('error', 'Error loading samples: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Show assigned samples
+ */
+public function assignedSamples()
+{
+    try {
+        $samples = $this->buyerAssignmentService->getAssignedSamples();
+        $statistics = $this->buyerAssignmentService->getAssignmentStatistics();
+
+        return view('admin.samples.assigned-samples', compact('samples', 'statistics'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('admin.samples.index')
+                       ->with('error', 'Error loading assigned samples: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Show assignments awaiting dispatch
+ */
+public function awaitingDispatch()
+{
+    try {
+        $assignments = $this->buyerAssignmentService->getAssignmentsAwaitingDispatch();
+        $statistics = $this->buyerAssignmentService->getAssignmentStatistics();
+
+        return view('admin.samples.awaiting-dispatch', compact('assignments', 'statistics'));
+
+    } catch (\Exception $e) {
+        return redirect()->route('admin.samples.index')
+                       ->with('error', 'Error loading assignments: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Update assignment dispatch status
+ */
+public function updateDispatchStatus(Request $request, $assignmentId)
+{
+    $request->validate([
+        'status' => 'required|in:dispatched,delivered,feedback_received',
+        'tracking_id' => 'nullable|string|max:100'
+    ]);
+
+    try {
+        $additionalData = [];
+        if ($request->filled('tracking_id')) {
+            $additionalData['tracking_id'] = $request->input('tracking_id');
+        }
+
+        $this->buyerAssignmentService->updateDispatchStatus(
+            $assignmentId, 
+            $request->input('status'),
+            $additionalData
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dispatch status updated successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
+
+/**
+ * Remove buyer assignment
+ */
+public function removeAssignment($assignmentId)
+{
+    try {
+        $this->buyerAssignmentService->removeAssignment($assignmentId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assignment removed successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
 }

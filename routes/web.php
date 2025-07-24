@@ -244,6 +244,18 @@ Route::prefix('api/admin')->name('api.admin.')->middleware(['auth:admin'])->grou
         Route::get('search', [CourierController::class, 'search'])->name('search');
         Route::get('select-options', [CourierController::class, 'getForSelect'])->name('select-options');
     });
+
+        Route::get('ready-for-assignment', [SampleController::class, 'readyForAssignment'])->name('ready-for-assignment');
+        Route::get('assigned-samples', [SampleController::class, 'assignedSamples'])->name('assigned-samples');
+        Route::get('awaiting-dispatch', [SampleController::class, 'awaitingDispatch'])->name('awaiting-dispatch');
+        
+        Route::get('{id}/assign-buyers', [SampleController::class, 'assignToBuyers'])->name('assign-buyers');
+        Route::post('{id}/assign-buyers', [SampleController::class, 'storeBuyerAssignments'])->name('store-buyer-assignments');
+        
+        // AJAX routes for assignment management
+        Route::patch('assignments/{assignmentId}/dispatch-status', [SampleController::class, 'updateDispatchStatus'])->name('update-dispatch-status');
+        Route::delete('assignments/{assignmentId}', [SampleController::class, 'removeAssignment'])->name('remove-assignment');
+   
     
 });
 

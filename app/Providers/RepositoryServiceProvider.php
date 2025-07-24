@@ -19,7 +19,8 @@ use App\Repositories\Interfaces\{
     SampleRepositoryInterface,
      PocRepositoryInterface,
     TeaRepositoryInterface,
-    GardenRepositoryInterface
+    GardenRepositoryInterface,
+    SampleBuyerAssignmentRepositoryInterface
 };
 
 // Repository Implementations
@@ -36,8 +37,8 @@ use App\Repositories\{
     SampleRepository,
      PocRepository,
     TeaRepository,
-    GardenRepository 
-
+    GardenRepository,
+    SampleBuyerAssignmentRepository
 };
 
 // Service Interfaces
@@ -45,6 +46,7 @@ use App\Services\Interfaces\BaseServiceInterface;
 
 // Service Implementations
 use App\Services\{
+    BuyerAssignmentService,
     SellerService,
     BuyerService,
     CourierService,
@@ -133,6 +135,19 @@ class RepositoryServiceProvider extends ServiceProvider
                 $app->make(TeaRepositoryInterface::class)
             );
         });
+
+          $this->app->bind(
+        SampleBuyerAssignmentRepositoryInterface::class,
+        SampleBuyerAssignmentRepository::class
+    );
+
+         $this->app->singleton(BuyerAssignmentService::class, function ($app) {
+        return new BuyerAssignmentService(
+            $app->make(SampleRepositoryInterface::class),
+            $app->make(SampleBuyerAssignmentRepositoryInterface::class),
+            $app->make(BuyerRepositoryInterface::class)
+        );
+    });
     }
 
     public function boot()
