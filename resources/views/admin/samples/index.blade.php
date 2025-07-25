@@ -210,7 +210,7 @@
     </div>
     
     <div class="col-md-3">
-        <a href="{{ route('admin.samples.index', ['evaluation_status' => 'evaluated']) }}" 
+        <a href="{{ route('admin.samples.index', ['evaluation_status' => 'completed']) }}" 
            class="card text-decoration-none text-dark h-100">
             <div class="card-body text-center">
                 <i class="fas fa-clipboard-check fa-2x text-info mb-2"></i>
