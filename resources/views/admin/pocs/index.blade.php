@@ -150,6 +150,7 @@
                     <tbody>
                         @foreach($pocs as $poc)
                             <tr>
+                               <td>{{ $poc->poc_name }}</td>
                                 <td>{{ $poc->email }}</td>
                                 <td>
                                     <div><i class="fas fa-envelope me-1"></i>{{ $poc->email }}</div>
