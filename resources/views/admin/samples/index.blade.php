@@ -197,39 +197,42 @@
     </div>
 
     <!-- Quick Links -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <a href="{{ route('admin.samples.pending-evaluations') }}" class="card text-decoration-none text-dark h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                    <h6>Pending Evaluations</h6>
-                    <p class="text-muted small mb-0">{{ $statistics['pending_evaluation'] }} samples</p>
-                </div>
-            </a>
-        </div>
+   <div class="row mb-4">
+    <div class="col-md-3">
+        <a href="{{ route('admin.samples.index', ['evaluation_status' => 'pending']) }}" 
+           class="card text-decoration-none text-dark h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                <h6>Pending Evaluations</h6>
+                <p class="text-muted small mb-0">{{ $statistics['pending_evaluation'] }} samples</p>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-3">
+        <a href="{{ route('admin.samples.index', ['evaluation_status' => 'evaluated']) }}" 
+           class="card text-decoration-none text-dark h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-clipboard-check fa-2x text-info mb-2"></i>
+                <h6>Evaluated Samples</h6>
+                <p class="text-muted small mb-0">{{ $statistics['evaluated'] }} samples</p>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-3">
+        <a href="{{ route('admin.samples.index', ['status' => 'approved']) }}" 
+           class="card text-decoration-none text-dark h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-star fa-2x text-success mb-2"></i>
+                <h6>Approved Samples</h6>
+                <p class="text-muted small mb-0">{{ $statistics['approved'] }} samples</p>
+            </div>
+        </a>
+    </div>
         
         <div class="col-md-3">
-            <a href="{{ route('admin.samples.evaluated') }}" class="card text-decoration-none text-dark h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-clipboard-check fa-2x text-info mb-2"></i>
-                    <h6>Evaluated Samples</h6>
-                    <p class="text-muted small mb-0">{{ $statistics['evaluated'] }} samples</p>
-                </div>
-            </a>
-        </div>
-        
-        <div class="col-md-3">
-            <a href="{{ route('admin.samples.approved') }}" class="card text-decoration-none text-dark h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-star fa-2x text-success mb-2"></i>
-                    <h6>Approved Samples</h6>
-                    <p class="text-muted small mb-0">{{ $statistics['approved'] }} samples</p>
-                </div>
-            </a>
-        </div>
-        
-        <div class="col-md-3">
-            <a href="{{ route('admin.samples.tasting-report') }}" class="card text-decoration-none text-dark h-100">
+            <a href="#" class="card text-decoration-none text-dark h-100">
                 <div class="card-body text-center">
                     <i class="fas fa-chart-bar fa-2x text-primary mb-2"></i>
                     <h6>Tasting Report</h6>
