@@ -63,6 +63,23 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                         <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">POC</label>
+                            <select class="form-select @error('poc') is-invalid @enderror" 
+                                    id="poc" name="poc">
+                                    <option value="">** Select Poc **</option>
+                                @foreach($pocs as $poc)
+                                    <option value="{{ $poc->id }}" 
+                                            {{ old('poc') ? 'selected' : '' }}>
+                                        {{ $poc->poc_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('poc')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                         
                         <div class="col-12 mb-3">
                             <label for="address" class="form-label">
@@ -287,8 +304,8 @@
 @endsection
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 @endpush
 
 @push('scripts')
@@ -296,12 +313,16 @@
 <script>
 $(document).ready(function() {
     // Initialize Select2 for tea selection
-    $('#tea_ids').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Select tea varieties...',
-        allowClear: true,
-        width: '100%'
-    });
+   
+
+
+      $('#tea_ids').select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'Select POCs...',
+    allowClear: true,
+    closeOnSelect: false
+});
 
     // Form validation
     $('#gardenForm').on('submit', function(e) {
@@ -345,11 +366,11 @@ $(document).ready(function() {
     });
     
     // Real-time validation
-    $('.form-control, .form-select').on('input change', function() {
-        if ($(this).val().trim()) {
-            $(this).removeClass('is-invalid');
-        }
-    });
+    // $('.form-control, .form-select').on('input change', function() {
+    //     if ($(this).val().trim()) {
+    //         $(this).removeClass('is-invalid');
+    //     }
+    // });
     
     // Select2 validation
     $('#tea_ids').on('change', function() {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\Poc;
 use App\Services\GardenService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,7 @@ class GardenController extends BaseAdminController
             ]);
         }
 
+
         return view($this->viewPrefix . '.index', [
             'gardens' => $gardens,
             'statistics' => $statistics,
@@ -51,11 +53,15 @@ class GardenController extends BaseAdminController
 
     public function create(): View
     {
+                $pocs = Poc::get();
+
         return view($this->viewPrefix . '.create', [
             'title' => 'Add New ' . $this->title,
             'states' => $this->service->getStatesOptions(),
             'teas' => $this->service->getAvailableTeas(),
-            'statusOptions' => $this->service->getStatusOptions()
+            'statusOptions' => $this->service->getStatusOptions(),
+             'pocs' => $pocs
+
         ]);
     }
 
