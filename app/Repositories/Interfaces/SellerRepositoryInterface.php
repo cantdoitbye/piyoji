@@ -23,4 +23,7 @@ interface SellerRepositoryInterface extends BaseRepositoryInterface
     public function checkGstinExists(string $gstin, int $excludeId = null);
     
     public function checkPanExists(string $pan, int $excludeId = null);
+
+    public function getSellersByGardenId(int $gardenId);
+public function getSellerWithGardens(int $id);
 }

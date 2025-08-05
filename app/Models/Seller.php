@@ -24,6 +24,8 @@ class Seller extends Model
         'pan',
         'tea_grades',
         'poc_ids',
+        'garden_ids',
+        'type',
         'status',
         'remarks'
     ];
@@ -31,7 +33,8 @@ class Seller extends Model
     protected $casts = [
         'tea_grades' => 'array',
             'poc_ids' => 'array', // Add this
-        'status' => 'boolean'
+        'status' => 'boolean',
+        'garden_ids' => 'array',
     ];
 
     // Relationships (commented out until modules are implemented)

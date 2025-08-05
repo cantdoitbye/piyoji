@@ -3,17 +3,25 @@
 namespace App\Services;
 
 use App\Models\Seller;
+use App\Repositories\Interfaces\GardenRepositoryInterface;
 use App\Repositories\Interfaces\SellerRepositoryInterface;
 use App\Services\Interfaces\BaseServiceInterface;
+use Illuminate\Container\Attributes\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class SellerService implements BaseServiceInterface
 {
     protected $sellerRepository;
+    protected $gardenRepository;
 
-    public function __construct(SellerRepositoryInterface $sellerRepository)
+    
+
+    public function __construct(SellerRepositoryInterface $sellerRepository, GardenRepositoryInterface $gardenRepository)
     {
         $this->sellerRepository = $sellerRepository;
+        $this->gardenRepository = $gardenRepository;
+
     }
 
     public function index(array $filters = [])
@@ -26,7 +34,7 @@ class SellerService implements BaseServiceInterface
         return $this->sellerRepository->find($id);
     }
 
-    public function store(array $data)
+    public function store_old(array $data)
     {
         // Validate unique fields
         $this->validateUniqueFields($data);
@@ -39,10 +47,40 @@ class SellerService implements BaseServiceInterface
         return $this->sellerRepository->create($data);
     }
 
+    public function store(array $data)
+{
+    try {
+
+        // Ensure garden_ids is an array of integers
+        if (isset($data['garden_ids'])) {
+            $data['garden_ids'] = array_map('intval', array_filter($data['garden_ids']));
+        } else {
+            $data['garden_ids'] = [];
+        }
+
+        $seller = $this->sellerRepository->create($data);
+
+
+        Log::info('Seller created successfully', ['seller_id' => $seller->id, 'seller_name' => $seller->seller_name]);
+
+        return $seller;
+    } catch (\Exception $e) {
+        Log::error('Error creating Seller: ' . $e->getMessage());
+        throw $e;
+    }
+}
+
     public function update(int $id, array $data)
     {
         // Validate unique fields excluding current record
         $this->validateUniqueFields($data, $id);
+
+            if (isset($data['garden_ids'])) {
+            $data['garden_ids'] = array_map('intval', array_filter($data['garden_ids']));
+        } else {
+            $data['garden_ids'] = [];
+        }
+
         
         // Process tea grades if it's a string
         if (isset($data['tea_grades']) && is_string($data['tea_grades'])) {
@@ -164,4 +202,9 @@ class SellerService implements BaseServiceInterface
             Seller::STATUS_INACTIVE => 'Inactive'
         ];
     }
+
+    public function getGardensForSelect()
+{
+    return $this->gardenRepository->getActiveGardensList();
+}
 }

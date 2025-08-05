@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\Tea;
 use App\Services\TeaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -261,4 +262,46 @@ class TeaController extends BaseAdminController
             'remarks' => 'nullable|string'
         ]);
     }
+
+    public function getTeaTypesByCategory(Request $request)
+{
+    $category = $request->get('category');
+    $teaTypes = Tea::getTeaTypesByCategory($category);
+    
+    return response()->json([
+        'tea_types' => array_combine($teaTypes, $teaTypes)
+    ]);
+}
+
+public function getGradeCodesByTeaType(Request $request)
+{
+    $teaType = $request->get('tea_type');
+    $gradeCodes = Tea::getGradeCodesByTeaType($teaType);
+    
+    return response()->json([
+        'grade_codes' => $gradeCodes
+    ]);
+}
+
+public function getFilteredTeas(Request $request)
+{
+    $query = Tea::active()
+        ->where('category_id', $request->get('category'))
+        ->where('tea_type_id', $request->get('tea_type'));
+    
+    if ($request->has('grade_codes') && !empty($request->get('grade_codes'))) {
+        $query->whereIn('grade_code', $request->get('grade_codes'));
+    }
+    
+    $teas = $query->select('id', 'category_id', 'tea_type_id', 'sub_tea_type_id', 'grade_code')
+                  ->get()
+                  ->map(function($tea) {
+                      return [
+                          'id' => $tea->id,
+                          'full_name' => $tea->full_name
+                      ];
+                  });
+    
+    return response()->json(['teas' => $teas]);
+}
 }

@@ -36,43 +36,9 @@
                             </h6>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="category" class="form-label">
-                                Category <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('category') is-invalid @enderror" 
-                                    id="category" name="category" required>
-                                <option value="">Select Category</option>
-                                @foreach($categories as $value => $label)
-                                    <option value="{{ $value }}" 
-                                            {{ old('category', $tea->category ?? '') == $value ? 'selected' : '' }}>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('category')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                       
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="tea_type" class="form-label">
-                                Tea Type <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('tea_type') is-invalid @enderror" 
-                                    id="tea_type" name="tea_type" required>
-                                <option value="">Select Tea Type</option>
-                                @foreach($teaTypes as $value => $label)
-                                    <option value="{{ $value }}" 
-                                            {{ old('tea_type', $tea->tea_type ?? '') == $value ? 'selected' : '' }}>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tea_type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        
                         
                         <div class="col-md-6 mb-3">
                             <label for="sub_title" class="form-label">
@@ -87,24 +53,73 @@
                             @enderror
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="grade" class="form-label">
-                                Grade <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('grade') is-invalid @enderror" 
-                                    id="grade" name="grade" required>
-                                <option value="">Select Grade</option>
-                                @foreach($grades as $value => $label)
-                                    <option value="{{ $value }}" 
-                                            {{ old('grade', $tea->grade ?? '') == $value ? 'selected' : '' }}>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('grade')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                       <!-- Tea Type Selection -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label for="tea_type_id" class="form-label">Tea Type <span class="text-danger">*</span></label>
+        <select class="form-select @error('tea_type_id') is-invalid @enderror" 
+                id="tea_type_id" name="tea_type_id" required>
+            <option value="">Select Tea Type</option>
+            @foreach(\App\Models\Tea::getTeaTypeOptions() as $key => $value)
+                <option value="{{ $key }}" {{ old('tea_type_id', $tea->tea_type_id ?? '') == $key ? 'selected' : '' }}>
+                    {{ $value }}
+                </option>
+            @endforeach
+        </select>
+        @error('tea_type_id')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="col-md-4">
+        <label for="sub_tea_type_id" class="form-label">Sub Tea Type <span class="text-danger">*</span></label>
+        <select class="form-select @error('sub_tea_type_id') is-invalid @enderror" 
+                id="sub_tea_type_id" name="sub_tea_type_id" required>
+            <option value="">Select Sub Tea Type</option>
+            @foreach(\App\Models\Tea::getSubTeaTypeOptions() as $key => $value)
+                <option value="{{ $key }}" {{ old('sub_tea_type_id', $tea->sub_tea_type_id ?? '') == $key ? 'selected' : '' }}>
+                    {{ $value }}
+                </option>
+            @endforeach
+        </select>
+        @error('sub_tea_type_id')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="col-md-4">
+        <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+        <select class="form-select @error('category_id') is-invalid @enderror" 
+                id="category_id" name="category_id" required>
+            <option value="">Select Category</option>
+            @foreach(\App\Models\Tea::getCategoryOptions() as $key => $value)
+                <option value="{{ $key }}" {{ old('category_id', $tea->category_id ?? '') == $key ? 'selected' : '' }}>
+                    {{ $value }}
+                </option>
+            @endforeach
+        </select>
+        @error('category_id')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+</div>
+
+<!-- Grade Code -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label for="grade_code" class="form-label">Grade Code <span class="text-danger">*</span></label>
+        <input type="text" class="form-control @error('grade_code') is-invalid @enderror" 
+               id="grade_code" name="grade_code" 
+               value="{{ old('grade_code', $tea->grade_code ?? '') }}" 
+               placeholder="Enter grade code (e.g., BP, BOP, PD)" required>
+        <div class="form-text">
+            You can enter free text or select from predefined list based on tea type selection.
+        </div>
+        @error('grade_code')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+</div>
                         
                         <div class="col-md-6 mb-3">
                             <label for="status" class="form-label">Status</label>

@@ -600,8 +600,8 @@ class ContractController extends BaseAdminController
             'contract_items.*.tea_grade_description' => 'nullable|string|max:255',
             'contract_items.*.price_per_kg' => 'required_with:contract_items|numeric|min:0',
             'contract_items.*.currency' => 'nullable|string|max:3',
-            'contract_items.*.minimum_quantity' => 'nullable|numeric|min:0',
-            'contract_items.*.maximum_quantity' => 'nullable|numeric|min:0',
+            'contract_items.*.quantity' => 'nullable|numeric|min:0',
+            // 'contract_items.*.maximum_quantity' => 'nullable|numeric|min:0',
             'contract_items.*.quality_parameters' => 'nullable|string',
             'contract_items.*.special_terms' => 'nullable|string',
             'contract_items.*.is_active' => 'boolean'
@@ -615,8 +615,8 @@ class ContractController extends BaseAdminController
             'tea_grade_description' => 'nullable|string|max:255',
             'price_per_kg' => 'required|numeric|min:0',
             'currency' => 'nullable|string|max:3',
-            'minimum_quantity' => 'nullable|numeric|min:0',
-            'maximum_quantity' => 'nullable|numeric|min:0|gte:minimum_quantity',
+            'quantity' => 'nullable|numeric|min:0',
+            // 'maximum_quantity' => 'nullable|numeric|min:0|gte:minimum_quantity',
             'quality_parameters' => 'nullable|string',
             'special_terms' => 'nullable|string',
             'is_active' => 'boolean'

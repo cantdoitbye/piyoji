@@ -15,8 +15,7 @@ class ContractItem extends Model
         'tea_grade_description',
         'price_per_kg',
         'currency',
-        'minimum_quantity',
-        'maximum_quantity',
+        'quantity',
         'quality_parameters',
         'special_terms',
         'is_active'
@@ -24,8 +23,7 @@ class ContractItem extends Model
 
     protected $casts = [
         'price_per_kg' => 'decimal:2',
-        'minimum_quantity' => 'decimal:2',
-        'maximum_quantity' => 'decimal:2',
+        'quantity' => 'decimal:2',
         'is_active' => 'boolean'
     ];
 
@@ -54,12 +52,8 @@ class ContractItem extends Model
 
     public function getQuantityRangeAttribute()
     {
-        if ($this->minimum_quantity && $this->maximum_quantity) {
-            return "{$this->minimum_quantity} - {$this->maximum_quantity} kg";
-        } elseif ($this->minimum_quantity) {
-            return "Min: {$this->minimum_quantity} kg";
-        } elseif ($this->maximum_quantity) {
-            return "Max: {$this->maximum_quantity} kg";
+        if ($this->quantity) {
+            return "{$this->quantity}  kg";
         }
         
         return 'No limit';
@@ -73,8 +67,8 @@ class ContractItem extends Model
     // Custom methods
     public function isWithinQuantityRange($quantity)
     {
-        $withinMin = !$this->minimum_quantity || $quantity >= $this->minimum_quantity;
-        $withinMax = !$this->maximum_quantity || $quantity <= $this->maximum_quantity;
+        $withinMin = !$this->quantity || $quantity >= $this->quantity;
+        $withinMax = !$this->quantity || $quantity <= $this->quantity;
         
         return $withinMin && $withinMax;
     }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\{
     CourierController,
     LogisticCompanyController,
     SampleController,
+    TeaController,
     UserController
 };
 
@@ -228,6 +229,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::patch('gardens/{id}/toggle-status', [App\Http\Controllers\Admin\GardenController::class, 'toggleStatus'])->name('gardens.toggle-status');
     
       
+      Route::get('tea-types-by-category', [TeaController::class, 'getTeaTypesByCategory'])
+         ->name('tea-types-by-category');
+    
+    Route::get('grade-codes-by-tea-type', [TeaController::class, 'getGradeCodesByTeaType'])
+         ->name('grade-codes-by-tea-type');
+    
+    Route::get('filtered-teas', [TeaController::class, 'getFilteredTeas'])
+         ->name('filtered-teas');
         
     });
 });

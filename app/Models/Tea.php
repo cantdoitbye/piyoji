@@ -11,10 +11,10 @@ class Tea extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category',
-        'tea_type',
-        'sub_title',
-        'grade',
+        'tea_type_id',
+        'sub_tea_type_id', 
+        'category_id',
+        'grade_code',
         'description',
         'characteristics',
         'status',
@@ -24,10 +24,59 @@ class Tea extends Model
     protected $casts = [
         'characteristics' => 'array',
         'status' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
+
+
+    // Static dropdown options as per requirements
+    public static function getTeaTypeOptions()
+    {
+        return [
+            'LEAF' => 'LEAF',
+            'DUST' => 'DUST'
+        ];
+    }
+
+    public static function getSubTeaTypeOptions()
+    {
+        return [
+            'Br.Leaf' => 'Br.Leaf',
+            'Dust' => 'Dust', 
+            'Fn.Leaf' => 'Fn.Leaf'
+        ];
+    }
+
+    public static function getCategoryOptions()
+    {
+        return [
+            'CTC' => 'CTC',
+            'ORTHODOX' => 'ORTHODOX',
+            'DARJEELING' => 'DARJEELING'
+        ];
+    }
+
+    // Helper methods for dependent logic
+    public static function getTeaTypesByCategory($category)
+    {
+        $mapping = [
+            'CTC' => ['LEAF', 'DUST'],
+            'ORTHODOX' => ['LEAF', 'DUST'], 
+            'DARJEELING' => ['LEAF', 'DUST']
+        ];
+        
+        return $mapping[$category] ?? [];
+    }
+
+    public static function getGradeCodesByTeaType($teaType)
+    {
+        // This will fetch from Tea Grade Master in actual implementation
+        // For now, return sample data
+        $mapping = [
+            'LEAF' => ['BP', 'BOP', 'BOPF', 'FOP', 'OP', 'Pekoe'],
+            'DUST' => ['PD', 'Dust', 'PF1', 'D1', 'CD']
+        ];
+        
+        return $mapping[$teaType] ?? [];
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -81,28 +130,9 @@ class Tea extends Model
         return $this->belongsToMany(Garden::class, 'garden_tea', 'tea_id', 'garden_id');
     }
 
-    // Static methods
-    public static function getCategoryOptions()
-    {
-        return [
-            'Black Tea' => 'Black Tea',
-            'Green Tea' => 'Green Tea',
-            'White Tea' => 'White Tea',
-            'Oolong Tea' => 'Oolong Tea',
-            'Herbal Tea' => 'Herbal Tea',
-            'Specialty Tea' => 'Specialty Tea'
-        ];
-    }
+  
 
-    public static function getTeaTypeOptions()
-    {
-        return [
-            'Orthodox' => 'Orthodox',
-            'CTC' => 'CTC',
-            'Specialty' => 'Specialty',
-            'Organic' => 'Organic'
-        ];
-    }
+  
 
     public static function getGradeOptions()
     {

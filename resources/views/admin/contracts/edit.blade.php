@@ -217,17 +217,17 @@
                                                    placeholder="Optional description">
                                         </div>
                                         <div class="col-md-3 mb-3">
-                                            <label class="form-label">Min Quantity (Kg)</label>
+                                            <label class="form-label">Quantity (Kg)</label>
                                             <input type="number" step="0.01" class="form-control" 
-                                                   name="contract_items[{{ $index }}][minimum_quantity]" 
-                                                   value="{{ $itemData->minimum_quantity ?? '' }}" min="0">
+                                                   name="contract_items[{{ $index }}][quantity]" 
+                                                   value="{{ $itemData->quantity ?? '' }}" min="0">
                                         </div>
-                                        <div class="col-md-3 mb-3">
+                                        {{-- <div class="col-md-3 mb-3">
                                             <label class="form-label">Max Quantity (Kg)</label>
                                             <input type="number" step="0.01" class="form-control" 
                                                    name="contract_items[{{ $index }}][maximum_quantity]" 
                                                    value="{{ $itemData->maximum_quantity ?? '' }}" min="0">
-                                        </div>
+                                        </div> --}}
                                     </div>
                                     
                                     <div class="row">
@@ -394,15 +394,15 @@
                        placeholder="Optional description">
             </div>
             <div class="col-md-3 mb-3">
-                <label class="form-label">Min Quantity (Kg)</label>
+                <label class="form-label">Quantity (Kg)</label>
                 <input type="number" step="0.01" class="form-control" 
-                       name="contract_items[INDEX][minimum_quantity]" min="0">
+                       name="contract_items[INDEX][quantity]" min="0">
             </div>
-            <div class="col-md-3 mb-3">
+            {{-- <div class="col-md-3 mb-3">
                 <label class="form-label">Max Quantity (Kg)</label>
                 <input type="number" step="0.01" class="form-control" 
                        name="contract_items[INDEX][maximum_quantity]" min="0">
-            </div>
+            </div> --}}
         </div>
         
         <div class="row">
@@ -496,10 +496,10 @@ $(document).ready(function() {
         let hasInvalidRange = false;
         
         $('#contractItems .contract-item').each(function() {
-            const minQty = parseFloat($(this).find('input[name*="minimum_quantity"]').val()) || 0;
-            const maxQty = parseFloat($(this).find('input[name*="maximum_quantity"]').val()) || 0;
+            const Qty = parseFloat($(this).find('input[name*="quantity"]').val()) || 0;
+            // const maxQty = parseFloat($(this).find('input[name*="maximum_quantity"]').val()) || 0;
             
-            if (minQty > 0 && maxQty > 0 && minQty > maxQty) {
+            if (Qty == 0) {
                 hasInvalidRange = true;
                 return false;
             }
@@ -507,7 +507,7 @@ $(document).ready(function() {
         
         if (hasInvalidRange) {
             e.preventDefault();
-            toastr.error('Minimum quantity cannot be greater than maximum quantity');
+            toastr.error('Quantity can not be 0');
             return false;
         }
     });

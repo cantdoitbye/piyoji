@@ -355,11 +355,11 @@ class ContractService implements BaseServiceInterface
             $errors['price_per_kg'] = ['Price per kg is required and must be greater than 0.'];
         }
 
-        if (!empty($data['minimum_quantity']) && !empty($data['maximum_quantity'])) {
-            if ($data['minimum_quantity'] > $data['maximum_quantity']) {
-                $errors['maximum_quantity'] = ['Maximum quantity must be greater than minimum quantity.'];
-            }
-        }
+        // if (!empty($data['minimum_quantity']) && !empty($data['maximum_quantity'])) {
+        //     if ($data['minimum_quantity'] > $data['maximum_quantity']) {
+        //         $errors['maximum_quantity'] = ['Maximum quantity must be greater than minimum quantity.'];
+        //     }
+        // }
 
         if (!empty($errors)) {
             throw ValidationException::withMessages($errors);

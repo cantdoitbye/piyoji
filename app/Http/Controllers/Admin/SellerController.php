@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
 use App\Models\Poc;
+use App\Services\GardenService;
 use App\Services\SellerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -16,10 +17,13 @@ class SellerController extends BaseAdminController
     protected $viewPrefix = 'admin.sellers';
     protected $routePrefix = 'admin.sellers';
     protected $title = 'Seller';
+protected $gardenService;
 
-    public function __construct(SellerService $sellerService)
+    public function __construct(SellerService $sellerService,GardenService $gardenService)
     {
         $this->service = $sellerService;
+        $this->gardenService = $gardenService;
+
         // Comment out parent constructor for now to avoid middleware issues
         // parent::__construct();
     }
@@ -55,12 +59,16 @@ class SellerController extends BaseAdminController
     public function create(): View
     {
             $pocs = Poc::active()->forSellers()->orderBy('poc_name')->get();
+    $gardens = $this->gardenService->getForSelect(); // Add this line
+    $states = $this->getIndianStates();
 
         return view($this->viewPrefix . '.create', [
             'title' => 'Add New ' . $this->title,
             'teaGrades' => $this->service->getTeaGradeOptions(),
             'statusOptions' => $this->service->getStatusOptions(),
-            'pocs' => $pocs
+            'pocs' => $pocs,
+            'gardens' => $gardens,
+            'states' => $states
         ]);
     }
 
@@ -94,14 +102,18 @@ class SellerController extends BaseAdminController
             abort(404);
         }
             $pocs = Poc::active()->forBuyers()->orderBy('poc_name')->get(); // Add this line
+    $states = $this->getIndianStates();
 
 
-        return view($this->viewPrefix . '.edit', [
+        return view($this->viewPrefix . '.create', [
             'seller' => $seller,
             'title' => 'Edit ' . $this->title,
             'teaGrades' => $this->service->getTeaGradeOptions(),
             'statusOptions' => $this->service->getStatusOptions(),
-            'pocs' => $pocs
+            'pocs' => $pocs,
+            'gardens' => $this->gardenService->getForSelect(),
+            'states' => $states
+
         ]);
     }
 
@@ -122,6 +134,7 @@ class SellerController extends BaseAdminController
             'tea_grades' => 'required|array|min:1',
             'tea_grades.*' => 'string|in:' . implode(',', array_keys($this->service->getTeaGradeOptions())),
             'status' => 'boolean',
+                        'type' => 'required|in:group,individual',
              'poc_ids' => 'nullable|array',
         'poc_ids.*' => 'exists:pocs,id',
             'remarks' => 'nullable|string'
@@ -158,6 +171,9 @@ class SellerController extends BaseAdminController
             ],
             'tea_grades' => 'required|array|min:1',
             'tea_grades.*' => 'string|in:' . implode(',', array_keys($this->service->getTeaGradeOptions())),
+            'garden_ids' => 'nullable|array',
+            'garden_ids.*' => 'integer|exists:gardens,id',
+            'type' => 'required|in:group,individual',
             'status' => 'boolean',
             'remarks' => 'nullable|string'
         ]);
@@ -271,4 +287,43 @@ class SellerController extends BaseAdminController
         
         return response()->json($sellers);
     }
+
+    private function getIndianStates()
+{
+    return [
+        'Andhra Pradesh' => 'Andhra Pradesh',
+        'Arunachal Pradesh' => 'Arunachal Pradesh',
+        'Assam' => 'Assam',
+        'Bihar' => 'Bihar',
+        'Chhattisgarh' => 'Chhattisgarh',
+        'Goa' => 'Goa',
+        'Gujarat' => 'Gujarat',
+        'Haryana' => 'Haryana',
+        'Himachal Pradesh' => 'Himachal Pradesh',
+        'Jharkhand' => 'Jharkhand',
+        'Karnataka' => 'Karnataka',
+        'Kerala' => 'Kerala',
+        'Madhya Pradesh' => 'Madhya Pradesh',
+        'Maharashtra' => 'Maharashtra',
+        'Manipur' => 'Manipur',
+        'Meghalaya' => 'Meghalaya',
+        'Mizoram' => 'Mizoram',
+        'Nagaland' => 'Nagaland',
+        'Odisha' => 'Odisha',
+        'Punjab' => 'Punjab',
+        'Rajasthan' => 'Rajasthan',
+        'Sikkim' => 'Sikkim',
+        'Tamil Nadu' => 'Tamil Nadu',
+        'Telangana' => 'Telangana',
+        'Tripura' => 'Tripura',
+        'Uttar Pradesh' => 'Uttar Pradesh',
+        'Uttarakhand' => 'Uttarakhand',
+        'West Bengal' => 'West Bengal',
+        'Delhi' => 'Delhi',
+        'Chandigarh' => 'Chandigarh',
+        'Puducherry' => 'Puducherry',
+        'Jammu and Kashmir' => 'Jammu and Kashmir',
+        'Ladakh' => 'Ladakh'
+    ];
+}
 }

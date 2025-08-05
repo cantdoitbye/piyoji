@@ -70,9 +70,12 @@ class RepositoryServiceProvider extends ServiceProvider
         
         // Seller Repository and Service
         $this->app->bind(SellerRepositoryInterface::class, SellerRepository::class);
-        $this->app->bind(SellerService::class, function ($app) {
-            return new SellerService($app->make(SellerRepositoryInterface::class));
-        });
+      $this->app->bind(SellerService::class, function ($app) {
+    return new SellerService(
+        $app->make(SellerRepositoryInterface::class),
+        $app->make(GardenRepositoryInterface::class)
+    );
+});
         
         // Buyer Repository and Service
         $this->app->bind(BuyerRepositoryInterface::class, BuyerRepository::class);

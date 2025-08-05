@@ -39,7 +39,8 @@ class SellerRepository extends BaseRepository implements SellerRepositoryInterfa
               ->orWhere('phone', 'LIKE', "%{$query}%")
               ->orWhere('city', 'LIKE', "%{$query}%")
               ->orWhere('gstin', 'LIKE', "%{$query}%")
-              ->orWhere('pan', 'LIKE', "%{$query}%");
+              ->orWhere('pan', 'LIKE', "%{$query}%")
+              ->orWhere('garden_name', 'LIKE', "%{$query}%");
         })->get();
     }
 
@@ -144,4 +145,21 @@ class SellerRepository extends BaseRepository implements SellerRepositoryInterfa
         return $query->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
+
+    public function getSellersByGardenId(int $gardenId)
+{
+    return $this->model->active()
+        ->whereJsonContains('garden_ids', $gardenId)
+        ->orderBy('seller_name')
+        ->get();
+}
+
+public function getSellerWithGardens(int $id)
+{
+    $seller = $this->model->find($id);
+    if ($seller && $seller->garden_ids) {
+        $seller->load(['selectedGardens']);
+    }
+    return $seller;
+}
 }
