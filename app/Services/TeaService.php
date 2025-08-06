@@ -63,7 +63,7 @@ class TeaService implements BaseServiceInterface
                     ->appends($filters);
     }
 
-     public function show(int $id)
+     public function show($id)
     {
         return $this->repository->find($id);
     }

@@ -310,6 +310,14 @@
                                 Garden Master
                             </a>
                         </li>
+
+                          <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.billing-companies.*') ? 'active' : '' }}" 
+                               href="{{ route('admin.billing-companies.index') }}">
+                                <i class="fas fa-seedling"></i>
+                                Billing Company
+                            </a>
+                        </li>
                         
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}" 

@@ -20,20 +20,44 @@ class Garden extends Model
         'state',
         'pincode',
         'tea_ids',
-        'altitude',
-        'speciality',
+        'category_filters',
+        'poc_ids',
         'status',
         'remarks'
     ];
 
     protected $casts = [
         'tea_ids' => 'array',
-        'altitude' => 'decimal:2',
-        'status' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'category_filters' => 'array',
+        'poc_ids' => 'array',
+        'status' => 'boolean'
     ];
+
+    // Relationships
+    public function teas()
+    {
+        return $this->belongsToMany(Tea::class, 'garden_tea', 'garden_id', 'tea_id');
+    }
+
+    public function pocs()
+    {
+        return $this->belongsToMany(Poc::class, 'garden_poc', 'garden_id', 'poc_id');
+    }
+
+    public function sellers()
+    {
+        return $this->belongsToMany(Seller::class, 'garden_seller', 'garden_id', 'seller_id');
+    }
+
+    public function teaCategories()
+    {
+        return $this->hasMany(GardenTeaCategory::class);
+    }
+
+    public function samples()
+    {
+        return $this->hasMany(Sample::class);
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -56,6 +80,26 @@ class Garden extends Model
         return $query->where('city', $city);
     }
 
+    public function scopeWithTeas($query, $teaIds = [])
+    {
+        if (empty($teaIds)) {
+            return $query;
+        }
+
+        return $query->whereJsonContains('tea_ids', $teaIds);
+    }
+
+    public function scopeWithCategories($query, $categories = [])
+    {
+        if (empty($categories)) {
+            return $query;
+        }
+
+        return $query->whereHas('teaCategories', function($q) use ($categories) {
+            $q->whereIn('category', $categories);
+        });
+    }
+
     // Accessors
     public function getStatusTextAttribute()
     {
@@ -64,53 +108,199 @@ class Garden extends Model
 
     public function getFullAddressAttribute()
     {
-        $addressParts = array_filter([
+        return implode(', ', array_filter([
             $this->address,
             $this->city,
             $this->state,
             $this->pincode
-        ]);
-        
-        return implode(', ', $addressParts);
+        ]));
     }
 
-    public function getAltitudeTextAttribute()
+    public function getSelectedTeaVarietiesAttribute()
     {
-        return $this->altitude ? $this->altitude . ' meters' : 'Not specified';
-    }
-
-    // Relationships
-    public function teas()
-    {
-        return $this->belongsToMany(Tea::class, 'garden_tea', 'garden_id', 'tea_id');
-    }
-
-    public function selectedTeas()
-    {
-        if (!$this->tea_ids || !is_array($this->tea_ids)) {
+        if (!$this->tea_ids) {
             return collect();
         }
-        
+
         return Tea::whereIn('id', $this->tea_ids)->get();
     }
 
-    // Methods
-    public function getTeaNamesAttribute()
+    public function getTeaVarietiesCountAttribute()
     {
-        if (!$this->tea_ids || !is_array($this->tea_ids)) {
-            return 'No teas selected';
+        return is_array($this->tea_ids) ? count($this->tea_ids) : 0;
+    }
+
+    public function getCategorySummaryAttribute()
+    {
+        if (!$this->category_filters) {
+            return [];
+        }
+
+        $summary = [];
+        foreach ($this->category_filters as $filter) {
+            $categoryName = Tea::getCategoryOptions()[$filter['category']] ?? $filter['category'];
+            $teaTypeCount = count($filter['tea_types'] ?? []);
+            $gradeCodeCount = count($filter['grade_codes'] ?? []);
+            
+            $summary[] = [
+                'category' => $categoryName,
+                'tea_types_count' => $teaTypeCount,
+                'grade_codes_count' => $gradeCodeCount,
+                'has_grade_filter' => $gradeCodeCount > 0
+            ];
+        }
+
+        return $summary;
+    }
+
+    public function getUniqueCategoriesAttribute()
+    {
+        if (!$this->category_filters) {
+            return [];
+        }
+
+        $categories = [];
+        foreach ($this->category_filters as $filter) {
+            if (isset($filter['category'])) {
+                $categories[] = $filter['category'];
+            }
+        }
+
+        return array_unique($categories);
+    }
+
+    public function getAllTeaTypesAttribute()
+    {
+        if (!$this->category_filters) {
+            return [];
+        }
+
+        $teaTypes = [];
+        foreach ($this->category_filters as $filter) {
+            if (isset($filter['tea_types'])) {
+                $teaTypes = array_merge($teaTypes, $filter['tea_types']);
+            }
+        }
+
+        return array_unique($teaTypes);
+    }
+
+    public function getAllGradeCodesAttribute()
+    {
+        if (!$this->category_filters) {
+            return [];
+        }
+
+        $gradeCodes = [];
+        foreach ($this->category_filters as $filter) {
+            if (isset($filter['grade_codes'])) {
+                $gradeCodes = array_merge($gradeCodes, $filter['grade_codes']);
+            }
+        }
+
+        return array_unique($gradeCodes);
+    }
+
+    // Methods
+    public function syncTeaVarieties($teaIds)
+    {
+        $this->update(['tea_ids' => $teaIds]);
+        $this->teas()->sync($teaIds);
+    }
+
+    public function syncCategoryFilters($categoryFilters)
+    {
+        $this->update(['category_filters' => $categoryFilters]);
+        
+        // Also update the garden_tea_categories table for better querying
+        $this->teaCategories()->delete();
+        
+        foreach ($categoryFilters as $filter) {
+            if (isset($filter['category']) && isset($filter['tea_types'])) {
+                GardenTeaCategory::create([
+                    'garden_id' => $this->id,
+                    'category' => $filter['category'],
+                    'tea_types' => $filter['tea_types'],
+                    'grade_codes' => $filter['grade_codes'] ?? []
+                ]);
+            }
+        }
+    }
+
+    public function addCategoryFilter($category, $teaTypes, $gradeCodes = [])
+    {
+        $filters = $this->category_filters ?? [];
+        
+        // Check if category already exists, replace if it does
+        $existingIndex = null;
+        foreach ($filters as $index => $filter) {
+            if ($filter['category'] === $category) {
+                $existingIndex = $index;
+                break;
+            }
+        }
+
+        $newFilter = [
+            'category' => $category,
+            'tea_types' => $teaTypes,
+            'grade_codes' => $gradeCodes
+        ];
+
+        if ($existingIndex !== null) {
+            $filters[$existingIndex] = $newFilter;
+        } else {
+            $filters[] = $newFilter;
+        }
+
+        $this->syncCategoryFilters($filters);
+    }
+
+    public function removeCategoryFilter($category)
+    {
+        $filters = $this->category_filters ?? [];
+        $filters = array_filter($filters, function($filter) use ($category) {
+            return $filter['category'] !== $category;
+        });
+
+        $this->syncCategoryFilters(array_values($filters));
+    }
+
+    public function hasCategory($category)
+    {
+        return in_array($category, $this->unique_categories);
+    }
+
+    public function hasTeaType($teaType)
+    {
+        return in_array($teaType, $this->all_tea_types);
+    }
+
+    public function hasGradeCode($gradeCode)
+    {
+        return in_array($gradeCode, $this->all_grade_codes);
+    }
+
+    public function getFilteredTeaVarieties()
+    {
+        if (!$this->category_filters) {
+            return collect();
+        }
+
+        $allTeas = collect();
+        
+        foreach ($this->category_filters as $filter) {
+            $categories = [$filter['category']];
+            $teaTypes = $filter['tea_types'] ?? [];
+            $gradeCodes = $filter['grade_codes'] ?? [];
+            
+            $filteredTeas = Tea::getFilteredTeas($categories, $teaTypes, $gradeCodes);
+            $allTeas = $allTeas->merge($filteredTeas);
         }
         
-        $teas = Tea::whereIn('id', $this->tea_ids)->pluck('sub_title')->toArray();
-        return implode(', ', $teas);
+        return $allTeas->unique('id');
     }
 
-    public function hasTeaId($teaId)
-    {
-        return in_array($teaId, $this->tea_ids ?? []);
-    }
-
-    // Static methods
+    // Static Methods
     public static function getStatusOptions()
     {
         return [
@@ -123,19 +313,67 @@ class Garden extends Model
     {
         return [
             'Assam' => 'Assam',
-            'Darjeeling' => 'Darjeeling',
-            'Kerala' => 'Kerala',
+            'West Bengal' => 'West Bengal',
             'Tamil Nadu' => 'Tamil Nadu',
+            'Kerala' => 'Kerala',
             'Karnataka' => 'Karnataka',
             'Himachal Pradesh' => 'Himachal Pradesh',
             'Uttarakhand' => 'Uttarakhand',
             'Arunachal Pradesh' => 'Arunachal Pradesh',
-            'Meghalaya' => 'Meghalaya',
             'Manipur' => 'Manipur',
+            'Meghalaya' => 'Meghalaya',
             'Mizoram' => 'Mizoram',
             'Nagaland' => 'Nagaland',
-            'Tripura' => 'Tripura',
-            'Sikkim' => 'Sikkim'
+            'Sikkim' => 'Sikkim',
+            'Tripura' => 'Tripura'
+        ];
+    }
+
+    // Search and Filter methods
+    public static function searchWithFilters($filters = [])
+    {
+        $query = self::active();
+
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('garden_name', 'like', "%{$search}%")
+                  ->orWhere('contact_person_name', 'like', "%{$search}%")
+                  ->orWhere('city', 'like', "%{$search}%")
+                  ->orWhere('state', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($filters['state']) && !empty($filters['state'])) {
+            $query->where('state', $filters['state']);
+        }
+
+        if (isset($filters['categories']) && !empty($filters['categories'])) {
+            $query->withCategories($filters['categories']);
+        }
+
+        if (isset($filters['tea_ids']) && !empty($filters['tea_ids'])) {
+            $query->withTeas($filters['tea_ids']);
+        }
+
+        return $query;
+    }
+
+    // Export methods
+    public function toSummaryArray()
+    {
+        return [
+            'id' => $this->id,
+            'garden_name' => $this->garden_name,
+            'contact_person' => $this->contact_person_name,
+            'mobile_no' => $this->mobile_no,
+            'email' => $this->email,
+            'location' => $this->city . ', ' . $this->state,
+            'tea_varieties_count' => $this->tea_varieties_count,
+            'categories' => $this->unique_categories,
+            'category_summary' => $this->category_summary,
+            'status' => $this->status_text,
+            'created_at' => $this->created_at
         ];
     }
 }

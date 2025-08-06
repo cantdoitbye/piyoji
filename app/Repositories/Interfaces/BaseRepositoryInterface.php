@@ -8,7 +8,7 @@ interface BaseRepositoryInterface
     
     public function paginate(int $perPage = 15, array $columns = ['*']);
     
-    public function find(int $id, array $columns = ['*']);
+    public function find($id, array $columns = ['*']);
     
     public function findBy(string $field, $value, array $columns = ['*']);
     

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\Buyer;
+use App\Models\BuyerAttachment;
 use App\Models\Poc;
 use App\Services\BuyerService;
 use Illuminate\Http\Request;
@@ -10,6 +12,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
+
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Response;
 
 class BuyerController extends BaseAdminController
 {
@@ -277,5 +282,302 @@ class BuyerController extends BaseAdminController
         $buyers = $this->service->getBuyersByTeaGrade($request->grade);
         
         return response()->json($buyers);
+    }
+
+     public function store(Request $request): RedirectResponse|JsonResponse
+    {
+        $rules = [
+            'buyer_name' => 'required|string|max:255',
+            'buyer_type' => 'required|in:big,small',
+            'contact_person' => 'required|string|max:255',
+            'email' => 'required|email|unique:buyers,email',
+            'phone' => 'required|string|max:20',
+            'billing_address' => 'required|string',
+            'billing_city' => 'required|string|max:255',
+            'billing_state' => 'required|string|max:255',
+            'billing_pincode' => 'required|string|max:10',
+            'shipping_address' => 'required|string',
+            'shipping_city' => 'required|string|max:255',
+            'shipping_state' => 'required|string|max:255',
+            'shipping_pincode' => 'required|string|max:10',
+            'preferred_tea_grades' => 'required|array|min:1',
+            'preferred_tea_grades.*' => 'string',
+            'status' => 'boolean',
+            'poc_ids' => 'nullable|array',
+            'poc_ids.*' => 'integer|exists:pocs,id',
+            'remarks' => 'nullable|string',
+            
+            // File attachments validation
+            'attachments' => 'nullable|array|max:10',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,bmp,txt|max:10240', // 10MB max
+            'attachment_types' => 'nullable|array',
+            'attachment_types.*' => 'string|in:license,agreement,certificate,registration,tax_document,bank_statement,other',
+            'attachment_descriptions' => 'nullable|array',
+            'attachment_descriptions.*' => 'nullable|string|max:500'
+        ];
+
+        $validatedData = $request->validate($rules);
+
+        try {
+            $buyer = $this->service->store($validatedData);
+
+            // Handle file attachments
+            if ($request->hasFile('attachments')) {
+                $this->handleFileAttachments($buyer, $request);
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $this->title . ' created successfully.',
+                    'data' => $buyer
+                ]);
+            }
+
+            return redirect()
+                ->route($this->routePrefix . '.index')
+                ->with('success', $this->title . ' created successfully.');
+
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle multiple file attachments for buyer
+     */
+    private function handleFileAttachments(Buyer $buyer, Request $request)
+    {
+        if (!$request->hasFile('attachments')) {
+            return;
+        }
+
+        $files = $request->file('attachments');
+        $types = $request->input('attachment_types', []);
+        $descriptions = $request->input('attachment_descriptions', []);
+
+        foreach ($files as $index => $file) {
+            if ($file->isValid()) {
+                // Generate unique filename
+                $filename = time() . '_' . $index . '_' . $file->getClientOriginalName();
+                
+                // Store file in buyer-specific directory
+                $path = $file->storeAs('buyers/' . $buyer->id . '/attachments', $filename, 'public');
+
+                // Create attachment record
+                BuyerAttachment::create([
+                    'buyer_id' => $buyer->id,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'document_type' => $types[$index] ?? 'other',
+                    'description' => $descriptions[$index] ?? null,
+                    'uploaded_by' => auth()->id()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Upload additional attachments to existing buyer
+     */
+    public function uploadAttachments(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'attachments' => 'required|array|max:10',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,bmp,txt|max:10240',
+            'attachment_types' => 'nullable|array',
+            'attachment_types.*' => 'string|in:license,agreement,certificate,registration,tax_document,bank_statement,other',
+            'attachment_descriptions' => 'nullable|array',
+            'attachment_descriptions.*' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $buyer = Buyer::findOrFail($id);
+            $this->handleFileAttachments($buyer, $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Files uploaded successfully.',
+                'attachments_count' => $buyer->attachments()->count()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get buyer attachments
+     */
+    public function getAttachments(int $id): JsonResponse
+    {
+        try {
+            $buyer = Buyer::findOrFail($id);
+            $attachments = $buyer->attachments()
+                ->with(['uploadedByUser', 'verifiedByUser'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'attachments' => $attachments
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Delete attachment
+     */
+    public function deleteAttachment(int $buyerId, int $attachmentId): JsonResponse
+    {
+        try {
+            $attachment = BuyerAttachment::where('buyer_id', $buyerId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment deleted successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Download attachment
+     */
+    public function downloadAttachment(int $buyerId, int $attachmentId): Response
+    {
+        try {
+            $attachment = BuyerAttachment::where('buyer_id', $buyerId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            if (!Storage::disk('public')->exists($attachment->file_path)) {
+                abort(404, 'File not found');
+            }
+
+            return response()
+                ->download(
+                    Storage::disk('public')->path($attachment->file_path),
+                    $attachment->file_name
+                );
+
+        } catch (\Exception $e) {
+            abort(404, 'File not found');
+        }
+    }
+
+    /**
+     * Preview attachment (for images and PDFs)
+     */
+    public function previewAttachment(int $buyerId, int $attachmentId): Response
+    {
+        try {
+            $attachment = BuyerAttachment::where('buyer_id', $buyerId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            if (!Storage::disk('public')->exists($attachment->file_path)) {
+                abort(404, 'File not found');
+            }
+
+            $file = Storage::disk('public')->get($attachment->file_path);
+
+            return response($file, 200)
+                ->header('Content-Type', $attachment->file_type)
+                ->header('Content-Disposition', 'inline; filename="' . $attachment->file_name . '"');
+
+        } catch (\Exception $e) {
+            abort(404, 'File not found');
+        }
+    }
+
+    /**
+     * Verify attachment
+     */
+    public function verifyAttachment(int $buyerId, int $attachmentId): JsonResponse
+    {
+        try {
+            $attachment = BuyerAttachment::where('buyer_id', $buyerId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->verify();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment verified successfully.',
+                'attachment' => $attachment->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Update attachment details
+     */
+    public function updateAttachment(Request $request, int $buyerId, int $attachmentId): JsonResponse
+    {
+        $request->validate([
+            'document_type' => 'required|string|in:license,agreement,certificate,registration,tax_document,bank_statement,other',
+            'description' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $attachment = BuyerAttachment::where('buyer_id', $buyerId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->update([
+                'document_type' => $request->document_type,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment updated successfully.',
+                'attachment' => $attachment->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
     }
 }

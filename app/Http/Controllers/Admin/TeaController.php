@@ -108,7 +108,7 @@ class TeaController extends BaseAdminController
     }
 
 
-    public function show(int $id): View|JsonResponse
+    public function show($id): View|JsonResponse
     {
         $tea = $this->service->show($id);
 
@@ -263,13 +263,26 @@ class TeaController extends BaseAdminController
         ]);
     }
 
-    public function getTeaTypesByCategory(Request $request)
+  public function getTeaTypesByCategory(Request $request): JsonResponse
 {
+    $request->validate([
+        'category' => 'required|string'
+    ]);
+
+
+
     $category = $request->get('category');
     $teaTypes = Tea::getTeaTypesByCategory($category);
     
+    // Fix: Check if teaTypes is empty and handle array_combine properly
+    if (empty($teaTypes)) {
+        return response()->json([
+            'tea_types' => []
+        ]);
+    }
+    
     return response()->json([
-        'tea_types' => array_combine($teaTypes, $teaTypes)
+        'tea_types' => $teaTypes // Remove array_combine as it's already an associative array
     ]);
 }
 
@@ -303,5 +316,99 @@ public function getFilteredTeas(Request $request)
                   });
     
     return response()->json(['teas' => $teas]);
+}
+
+// Add this method to your TeaController class
+
+/**
+ * Get existing grade codes from database for given tea types (for Garden filtering)
+ */
+public function getExistingGradeCodesByTeaTypes(Request $request): JsonResponse
+{
+    try {
+        $request->validate([
+            'tea_types' => 'required|array',
+            'tea_types.*' => 'string'
+        ]);
+
+        $teaTypes = $request->get('tea_types');
+        \Log::info('getExistingGradeCodesByTeaTypes called with tea types: ' . json_encode($teaTypes));
+        
+        $gradeCodes = Tea::getExistingGradeCodesByTeaTypes($teaTypes);
+        \Log::info('Found grade codes: ' . json_encode($gradeCodes));
+        
+        return response()->json([
+            'success' => true,
+            'grade_codes' => $gradeCodes,
+            'count' => count($gradeCodes)
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error in getExistingGradeCodesByTeaTypes: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'grade_codes' => []
+        ], 500);
+    }
+}
+
+// Add this method to your TeaController class
+
+/**
+ * Get filtered teas for multiple filter combinations (for Garden multi-category selection)
+ */
+public function getFilteredTeasMultiple(Request $request): JsonResponse
+{
+    try {
+        $request->validate([
+            'filters' => 'required|array|min:1',
+            'filters.*.categories' => 'required|array|min:1',
+            'filters.*.categories.*' => 'string',
+            'filters.*.tea_types' => 'required|array|min:1', 
+            'filters.*.tea_types.*' => 'string',
+            'filters.*.sub_tea_types' => 'nullable|array',
+            'filters.*.sub_tea_types.*' => 'string',
+            'filters.*.grade_codes' => 'nullable|array',
+            'filters.*.grade_codes.*' => 'string'
+        ]);
+
+        $filters = $request->get('filters');
+        \Log::info('getFilteredTeasMultiple called with filters: ' . json_encode($filters));
+        
+        $allTeas = collect();
+
+        foreach ($filters as $filter) {
+            $categories = $filter['categories'];
+            $teaTypes = $filter['tea_types'];
+            $subTeaTypes = $filter['sub_tea_types'] ?? [];
+            $gradeCodes = $filter['grade_codes'] ?? [];
+            
+            \Log::info('Processing filter - Categories: ' . json_encode($categories) . ', Tea Types: ' . json_encode($teaTypes));
+            
+            $filteredTeas = Tea::getFilteredTeas($categories, $teaTypes, $gradeCodes, $subTeaTypes);
+            $allTeas = $allTeas->merge($filteredTeas);
+        }
+
+        // Remove duplicates based on tea ID
+        $uniqueTeas = $allTeas->unique('id')->values();
+        
+        \Log::info('Found ' . $uniqueTeas->count() . ' unique teas after filtering');
+        
+        return response()->json([
+            'success' => true,
+            'teas' => $uniqueTeas,
+            'count' => $uniqueTeas->count()
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error in getFilteredTeasMultiple: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'teas' => [],
+            'count' => 0
+        ], 422);
+    }
 }
 }

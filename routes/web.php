@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\{
     AuthController,
+    BillingCompanyController,
     DashboardController,
     SellerController,
     BuyerController,
@@ -92,6 +93,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('export', [BuyerController::class, 'export'])->name('export');
             Route::get('by-type', [BuyerController::class, 'getByType'])->name('by-type');
             Route::get('by-tea-grade', [BuyerController::class, 'getByTeaGrade'])->name('by-tea-grade');
+      
+      
+                  Route::post('{id}/attachments', [BuyerController::class, 'uploadAttachments'])->name('upload-attachments');
+        Route::get('{id}/attachments', [BuyerController::class, 'getAttachments'])->name('get-attachments');
+        Route::delete('{buyerId}/attachments/{attachmentId}', [BuyerController::class, 'deleteAttachment'])->name('delete-attachment');
+        Route::get('{buyerId}/attachments/{attachmentId}/download', [BuyerController::class, 'downloadAttachment'])->name('attachments.download');
+        Route::get('{buyerId}/attachments/{attachmentId}/preview', [BuyerController::class, 'previewAttachment'])->name('attachments.preview');
+        Route::post('{buyerId}/attachments/{attachmentId}/verify', [BuyerController::class, 'verifyAttachment'])->name('verify-attachment');
+        Route::put('{buyerId}/attachments/{attachmentId}', [BuyerController::class, 'updateAttachment'])->name('update-attachment');
+   
         });
         
         // Courier Services Management
@@ -221,22 +232,84 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::patch('pocs/{id}/toggle-status', [App\Http\Controllers\Admin\PocController::class, 'toggleStatus'])->name('pocs.toggle-status');
     
     // Tea Master Routes
-    Route::resource('teas', App\Http\Controllers\Admin\TeaController::class);
-    Route::patch('teas/{id}/toggle-status', [App\Http\Controllers\Admin\TeaController::class, 'toggleStatus'])->name('teas.toggle-status');
+    // Route::resource('teas', App\Http\Controllers\Admin\TeaController::class);
+    // Route::patch('teas/{id}/toggle-status', [App\Http\Controllers\Admin\TeaController::class, 'toggleStatus'])->name('teas.toggle-status');
     
     // Garden Master Routes
     Route::resource('gardens', App\Http\Controllers\Admin\GardenController::class);
     Route::patch('gardens/{id}/toggle-status', [App\Http\Controllers\Admin\GardenController::class, 'toggleStatus'])->name('gardens.toggle-status');
     
+
+
+
+     Route::prefix('teas')->name('teas.')->group(function () {
+           // New tea grading system routes
+        Route::get('tea-types-by-category', [TeaController::class, 'getTeaTypesByCategory'])->name('tea-types-by-category');
+        Route::get('grade-codes-by-tea-type', [TeaController::class, 'getGradeCodesByTeaType'])->name('grade-codes-by-tea-type');
+        Route::get('existing-grade-codes', [TeaController::class, 'getExistingGradeCodesByTeaTypes'])->name('existing-grade-codes');
+        Route::get('filtered-teas', [TeaController::class, 'getFilteredTeas'])->name('filtered-teas');
+        Route::post('filtered-teas-multiple', [TeaController::class, 'getFilteredTeasMultiple'])->name('filtered-teas-multiple');
+        Route::post('validate-grading', [TeaController::class, 'validateGrading'])->name('validate-grading');
+        Route::get('grading-options', [TeaController::class, 'getGradingOptions'])->name('grading-options');
+        Route::get('search', [TeaController::class, 'search'])->name('search');
+        Route::get('statistics', [TeaController::class, 'getStatistics'])->name('statistics');
+        Route::post('bulk-action', [TeaController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('export', [TeaController::class, 'export'])->name('export');
+   
+       
+        Route::get('/', [TeaController::class, 'index'])->name('index');
+        Route::get('create', [TeaController::class, 'create'])->name('create');
+        Route::post('/', [TeaController::class, 'store'])->name('store');
+        Route::get('{id}', [TeaController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [TeaController::class, 'edit'])->name('edit');
+        Route::put('{id}', [TeaController::class, 'update'])->name('update');
+        Route::delete('{id}', [TeaController::class, 'destroy'])->name('destroy');
+        
+     });
       
-      Route::get('tea-types-by-category', [TeaController::class, 'getTeaTypesByCategory'])
-         ->name('tea-types-by-category');
+
+     Route::prefix('billing-companies')->name('billing-companies.')->group(function () {
+        Route::get('/', [BillingCompanyController::class, 'index'])->name('index');
+        Route::get('create', [BillingCompanyController::class, 'create'])->name('create');
+        Route::post('/', [BillingCompanyController::class, 'store'])->name('store');
+        Route::get('{id}', [BillingCompanyController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [BillingCompanyController::class, 'edit'])->name('edit');
+        Route::put('{id}', [BillingCompanyController::class, 'update'])->name('update');
+        Route::delete('{id}', [BillingCompanyController::class, 'destroy'])->name('destroy');
+        
+        Route::patch('{id}/status', [BillingCompanyController::class, 'updateStatus'])->name('update-status');
+        Route::post('{id}/shipping-address', [BillingCompanyController::class, 'addShippingAddress'])->name('add-shipping-address');
+        Route::get('by-type', [BillingCompanyController::class, 'getByType'])->name('by-type');
+        Route::post('bulk-action', [BillingCompanyController::class, 'bulkAction'])->name('bulk-action');
+        Route::get('export', [BillingCompanyController::class, 'export'])->name('export');
+    });
+
+    // Transporter Branches Management (from previous artifacts)
+    Route::prefix('transporter-branches')->name('transporter-branches.')->group(function () {
+        Route::get('/', [TransporterBranchController::class, 'index'])->name('index');
+        Route::get('create', [TransporterBranchController::class, 'create'])->name('create');
+        Route::post('/', [TransporterBranchController::class, 'store'])->name('store');
+        Route::get('{id}', [TransporterBranchController::class, 'show'])->name('show');
+        Route::get('{id}/edit', [TransporterBranchController::class, 'edit'])->name('edit');
+        Route::put('{id}', [TransporterBranchController::class, 'update'])->name('update');
+        Route::delete('{id}', [TransporterBranchController::class, 'destroy'])->name('destroy');
+        
+        Route::patch('{id}/status', [TransporterBranchController::class, 'updateStatus'])->name('update-status');
+        Route::get('by-company/{companyId}', [TransporterBranchController::class, 'getByCompany'])->name('by-company');
+        Route::get('by-city/{city}', [TransporterBranchController::class, 'getByCity'])->name('by-city');
+        Route::post('{id}/service-route', [TransporterBranchController::class, 'addServiceRoute'])->name('add-service-route');
+        Route::delete('{branchId}/service-route/{routeId}', [TransporterBranchController::class, 'removeServiceRoute'])->name('remove-service-route');
+    });
+    //   Route::get('tea-types-by-category', [TeaController::class, 'getTeaTypesByCategory'])
+    //      ->name('tea-types-by-category');
     
-    Route::get('grade-codes-by-tea-type', [TeaController::class, 'getGradeCodesByTeaType'])
-         ->name('grade-codes-by-tea-type');
+    // Route::get('grade-codes-by-tea-type', [TeaController::class, 'getGradeCodesByTeaType'])
+    //      ->name('grade-codes-by-tea-type');
     
-    Route::get('filtered-teas', [TeaController::class, 'getFilteredTeas'])
-         ->name('filtered-teas');
+    // Route::get('filtered-teas', [TeaController::class, 'getFilteredTeas'])
+    //      ->name('filtered-teas');
+
+
         
     });
 });

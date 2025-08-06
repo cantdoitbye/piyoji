@@ -246,6 +246,9 @@
                                     <a href="{{ route('admin.buyers.edit', $buyer->id) }}" class="btn btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                     <a href="{{ route('admin.buyers.upload-attachments', $buyer->id) }}" class="btn btn-outline-info" title="Attachements">
+                                        <i class="fas fa-file"></i>
+                                    </a>
                                     <button type="button" class="btn btn-outline-{{ $buyer->status ? 'warning' : 'success' }}" 
                                             onclick="toggleStatus({{ $buyer->id }}, {{ $buyer->status ? 'false' : 'true' }})" 
                                             title="{{ $buyer->status ? 'Deactivate' : 'Activate' }}">

@@ -119,6 +119,40 @@ class Buyer extends Model
         $this->attributes['email'] = strtolower($value);
     }
 
+    // Add this method to your Buyer model class
+
+/**
+ * Get all attachments for this buyer
+ */
+public function attachments()
+{
+    return $this->hasMany(BuyerAttachment::class);
+}
+
+/**
+ * Get only verified attachments
+ */
+public function verifiedAttachments()
+{
+    return $this->hasMany(BuyerAttachment::class)->where('is_verified', true);
+}
+
+/**
+ * Get unverified attachments
+ */
+public function unverifiedAttachments()
+{
+    return $this->hasMany(BuyerAttachment::class)->where('is_verified', false);
+}
+
+/**
+ * Get attachments by document type
+ */
+public function attachmentsByType($type)
+{
+    return $this->hasMany(BuyerAttachment::class)->where('document_type', $type);
+}
+
     // Constants
     const TYPE_BIG = 'big';
     const TYPE_SMALL = 'small';

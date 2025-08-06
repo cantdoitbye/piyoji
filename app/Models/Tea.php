@@ -11,10 +11,10 @@ class Tea extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'tea_type_id',
-        'sub_tea_type_id', 
-        'category_id',
+        'category',
+        'tea_type', 
         'grade_code',
+        'sub_title',
         'description',
         'characteristics',
         'status',
@@ -22,60 +22,75 @@ class Tea extends Model
     ];
 
     protected $casts = [
-        'characteristics' => 'array',
-        'status' => 'boolean',
+        'status' => 'boolean'
     ];
 
+    // Tea Categories
+    const CATEGORIES = [
+        'BLACK' => 'Black Tea',
+        'GREEN' => 'Green Tea', 
+        'WHITE' => 'White Tea',
+        'OOLONG' => 'Oolong Tea',
+        'SPECIALTY' => 'Specialty Tea'
+    ];
 
-    // Static dropdown options as per requirements
-    public static function getTeaTypeOptions()
+    // Tea Types per Category (for dependent dropdown)
+    const TEA_TYPES = [
+        'BLACK' => [
+            'ORTHODOX' => 'Orthodox',
+            'CTC' => 'CTC (Crush, Tear, Curl)',
+            'DUST' => 'Dust Grade'
+        ],
+        'GREEN' => [
+            'LEAF' => 'Leaf Grade',
+            'POWDER' => 'Powder Grade',
+            'SENCHA' => 'Sencha'
+        ],
+        'WHITE' => [
+            'SILVER_TIP' => 'Silver Tip',
+            'WHITE_PEONY' => 'White Peony'
+        ],
+        'OOLONG' => [
+            'TRADITIONAL' => 'Traditional',
+            'MODERN' => 'Modern Process'
+        ],
+        'SPECIALTY' => [
+            'FLAVORED' => 'Flavored Tea',
+            'HERBAL' => 'Herbal Tea',
+            'BLENDED' => 'Blended Tea'
+        ]
+    ];
+
+    // Common Grade Codes per Tea Type (for suggestions/autocomplete)
+    const COMMON_GRADE_CODES = [
+        'ORTHODOX' => ['FTGFOP1', 'FTGFOP', 'TGFOP1', 'TGFOP', 'GFOP', 'FOP', 'OP', 'OP1', 'PEKOE', 'PS'],
+        'CTC' => ['BP', 'BOP', 'BOPF', 'OF', 'F', 'PF'],
+        'DUST' => ['PD', 'D', 'D1', 'RD', 'CD', 'SRD'],
+        'LEAF' => ['GUNPOWDER', 'YOUNG_HYSON', 'HYSON', 'IMPERIAL', 'TWANKAY'],
+        'POWDER' => ['GREEN_POWDER', 'MATCHA', 'FINE_POWDER'],
+        'SILVER_TIP' => ['WHITE_SILVER_TIP', 'PREMIUM_SILVER_TIP'],
+        'WHITE_PEONY' => ['WHITE_PEONY_GRADE_1', 'WHITE_PEONY_GRADE_2'],
+        'TRADITIONAL' => ['TRADITIONAL_OOLONG', 'HIGH_GRADE_OOLONG'],
+        'MODERN' => ['MODERN_OOLONG', 'LIGHT_OOLONG'],
+        'FLAVORED' => ['EARL_GREY', 'JASMINE', 'BERGAMOT'],
+        'HERBAL' => ['CHAMOMILE', 'PEPPERMINT', 'GINGER'],
+        'BLENDED' => ['BREAKFAST_BLEND', 'AFTERNOON_BLEND', 'EVENING_BLEND']
+    ];
+
+    // Relationships
+    public function gardens()
     {
-        return [
-            'LEAF' => 'LEAF',
-            'DUST' => 'DUST'
-        ];
+        return $this->belongsToMany(Garden::class, 'garden_tea', 'tea_id', 'garden_id');
     }
 
-    public static function getSubTeaTypeOptions()
+    public function samples()
     {
-        return [
-            'Br.Leaf' => 'Br.Leaf',
-            'Dust' => 'Dust', 
-            'Fn.Leaf' => 'Fn.Leaf'
-        ];
+        return $this->hasMany(Sample::class);
     }
 
-    public static function getCategoryOptions()
+    public function contracts()
     {
-        return [
-            'CTC' => 'CTC',
-            'ORTHODOX' => 'ORTHODOX',
-            'DARJEELING' => 'DARJEELING'
-        ];
-    }
-
-    // Helper methods for dependent logic
-    public static function getTeaTypesByCategory($category)
-    {
-        $mapping = [
-            'CTC' => ['LEAF', 'DUST'],
-            'ORTHODOX' => ['LEAF', 'DUST'], 
-            'DARJEELING' => ['LEAF', 'DUST']
-        ];
-        
-        return $mapping[$category] ?? [];
-    }
-
-    public static function getGradeCodesByTeaType($teaType)
-    {
-        // This will fetch from Tea Grade Master in actual implementation
-        // For now, return sample data
-        $mapping = [
-            'LEAF' => ['BP', 'BOP', 'BOPF', 'FOP', 'OP', 'Pekoe'],
-            'DUST' => ['PD', 'Dust', 'PF1', 'D1', 'CD']
-        ];
-        
-        return $mapping[$teaType] ?? [];
+        return $this->hasMany(Contract::class);
     }
 
     // Scopes
@@ -99,9 +114,9 @@ class Tea extends Model
         return $query->where('tea_type', $teaType);
     }
 
-    public function scopeByGrade($query, $grade)
+    public function scopeByGradeCode($query, $gradeCode)
     {
-        return $query->where('grade', $grade);
+        return $query->where('grade_code', $gradeCode);
     }
 
     // Accessors
@@ -110,46 +125,54 @@ class Tea extends Model
         return $this->status ? 'Active' : 'Inactive';
     }
 
+    public function getCategoryTextAttribute()
+    {
+        return self::CATEGORIES[$this->category] ?? 'Unknown';
+    }
+
+    public function getTeaTypeTextAttribute()
+    {
+        $categoryTypes = self::TEA_TYPES[$this->category] ?? [];
+        return $categoryTypes[$this->tea_type] ?? 'Unknown';
+    }
+
     public function getFullNameAttribute()
     {
-        return "{$this->category} - {$this->tea_type} - {$this->sub_title} ({$this->grade})";
-    }
-
-    public function getCharacteristicsTextAttribute()
-    {
-        if (!$this->characteristics || !is_array($this->characteristics)) {
-            return 'Not specified';
-        }
+        $parts = array_filter([
+            $this->category_text,
+            $this->tea_type_text,
+            $this->grade_code,
+            $this->sub_title
+        ]);
         
-        return implode(', ', $this->characteristics);
+        return implode(' - ', $parts);
     }
 
-    // Relationships
-    public function gardens()
+    public function getShortNameAttribute()
     {
-        return $this->belongsToMany(Garden::class, 'garden_tea', 'tea_id', 'garden_id');
+        $parts = array_filter([
+            $this->category,
+            $this->tea_type,
+            $this->grade_code
+        ]);
+        
+        return implode('-', $parts);
     }
 
-  
-
-  
-
-    public static function getGradeOptions()
+    // Static Methods
+    public static function getCategoryOptions()
     {
-        return [
-            'BP' => 'Broken Pekoe (BP)',
-            'BOP' => 'Broken Orange Pekoe (BOP)',
-            'BOPF' => 'Broken Orange Pekoe Fannings (BOPF)',
-            'PD' => 'Pekoe Dust (PD)',
-            'Dust' => 'Dust',
-            'FTGFOP' => 'Finest Tippy Golden Flowery Orange Pekoe (FTGFOP)',
-            'TGFOP' => 'Tippy Golden Flowery Orange Pekoe (TGFOP)',
-            'GFOP' => 'Golden Flowery Orange Pekoe (GFOP)',
-            'FOP' => 'Flowery Orange Pekoe (FOP)',
-            'OP' => 'Orange Pekoe (OP)',
-            'Pekoe' => 'Pekoe',
-            'Souchong' => 'Souchong'
-        ];
+        return self::CATEGORIES;
+    }
+
+    public static function getTeaTypesByCategory($category)
+    {
+        return self::TEA_TYPES[$category] ?? [];
+    }
+
+    public static function getCommonGradeCodesByTeaType($teaType)
+    {
+        return self::COMMON_GRADE_CODES[$teaType] ?? [];
     }
 
     public static function getStatusOptions()
@@ -157,6 +180,80 @@ class Tea extends Model
         return [
             '1' => 'Active',
             '0' => 'Inactive'
+        ];
+    }
+
+    // Validation Methods
+    public static function isValidTeaTypeForCategory($category, $teaType)
+    {
+        $validTypes = self::TEA_TYPES[$category] ?? [];
+        return array_key_exists($teaType, $validTypes);
+    }
+
+    // Search Methods for Garden filtering
+    public static function getFilteredTeas($categories = [], $teaTypes = [], $gradeCodes = [])
+    {
+        $query = self::active();
+        
+        if (!empty($categories)) {
+            $query->whereIn('category', $categories);
+        }
+        
+        if (!empty($teaTypes)) {
+            $query->whereIn('tea_type', $teaTypes);
+        }
+        
+        if (!empty($gradeCodes)) {
+            $query->whereIn('grade_code', $gradeCodes);
+        }
+        
+        return $query->select('id', 'category', 'tea_type', 'grade_code', 'sub_title')
+                   ->get()
+                   ->map(function($tea) {
+                       return [
+                           'id' => $tea->id,
+                           'full_name' => $tea->full_name,
+                           'short_name' => $tea->short_name,
+                           'category' => $tea->category,
+                           'tea_type' => $tea->tea_type,
+                           'grade_code' => $tea->grade_code
+                       ];
+                   });
+    }
+
+    // Get unique grade codes that exist in database for given tea types
+    public static function getExistingGradeCodesByTeaTypes($teaTypes = [])
+    {
+        if (empty($teaTypes)) {
+            return [];
+        }
+
+        return self::whereIn('tea_type', $teaTypes)
+                   ->distinct()
+                   ->pluck('grade_code')
+                   ->sort()
+                   ->values()
+                   ->toArray();
+    }
+
+    // Export Methods for API responses
+    public function toGradingArray()
+    {
+        return [
+            'id' => $this->id,
+            'category' => [
+                'id' => $this->category,
+                'name' => $this->category_text
+            ],
+            'tea_type' => [
+                'id' => $this->tea_type,
+                'name' => $this->tea_type_text
+            ],
+            'grade_code' => $this->grade_code,
+            'sub_title' => $this->sub_title,
+            'full_name' => $this->full_name,
+            'short_name' => $this->short_name,
+            'status' => $this->status
         ];
     }
 }

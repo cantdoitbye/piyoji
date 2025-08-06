@@ -28,111 +28,16 @@
                         @method('PUT')
                     @endif
 
-                    <!-- 3-Level Dependent Dropdown Section -->
+                    <!-- Basic Garden Information -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-filter me-2"></i>Tea Selection Filters
-                            </h6>
-                        </div>
-                        
-                        <!-- Step 1: Category Selection -->
-                        <div class="col-md-4 mb-3">
-                            <label for="selected_category" class="form-label">
-                                1. Select Category <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('selected_category') is-invalid @enderror" 
-                                    id="selected_category" name="selected_category" required>
-                                <option value="">Choose Category</option>
-                                @foreach(\App\Models\Tea::getCategoryOptions() as $key => $value)
-                                    <option value="{{ $key }}" {{ old('selected_category', $garden->selected_category ?? '') == $key ? 'selected' : '' }}>
-                                        {{ $value }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('selected_category')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Step 2: Tea Type Selection (Dependent on Category) -->
-                        <div class="col-md-4 mb-3">
-                            <label for="selected_tea_type" class="form-label">
-                                2. Select Tea Type <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select @error('selected_tea_type') is-invalid @enderror" 
-                                    id="selected_tea_type" name="selected_tea_type" required disabled>
-                                <option value="">First select category</option>
-                            </select>
-                            @error('selected_tea_type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Step 3: Grade Codes Selection (Dependent on Tea Type) -->
-                        <div class="col-md-4 mb-3">
-                            <label for="filtered_grade_codes" class="form-label">
-                                3. Available Grade Codes
-                            </label>
-                            <select class="form-select @error('filtered_grade_codes') is-invalid @enderror" 
-                                    id="filtered_grade_codes" name="filtered_grade_codes[]" multiple disabled>
-                                <option value="">First select tea type</option>
-                            </select>
-                            <div class="form-text">
-                                Grade codes will be filtered based on your tea type selection
-                            </div>
-                            @error('filtered_grade_codes')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- Sub Tea Type (Static - Not part of dependent logic) -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="sub_tea_type" class="form-label">Sub Tea Type</label>
-                            <select class="form-select" id="sub_tea_type" name="sub_tea_type">
-                                <option value="">Select Sub Tea Type (Optional)</option>
-                                @foreach(\App\Models\Tea::getSubTeaTypeOptions() as $key => $value)
-                                    <option value="{{ $key }}" {{ old('sub_tea_type', $garden->sub_tea_type ?? '') == $key ? 'selected' : '' }}>
-                                        {{ $value }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="form-text">
-                                This field is independent of the dependent selection logic above
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Final Tea Selection (Based on Filters) - ONLY THIS ONE -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-leaf me-2"></i>Filtered Tea Varieties <span class="text-danger">*</span>
-                            </h6>
-                        </div>
-                        
-                        <div class="col-12" id="filtered-tea-selection">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Please complete the category and tea type selection above to see available tea varieties.
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Basic Information -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-seedling me-2"></i>Garden Information
+                                <i class="fas fa-info-circle me-2"></i>Basic Information
                             </h6>
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="garden_name" class="form-label">
-                                Garden Name <span class="text-danger">*</span>
-                            </label>
+                            <label for="garden_name" class="form-label">Garden Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('garden_name') is-invalid @enderror" 
                                    id="garden_name" name="garden_name" 
                                    value="{{ old('garden_name', $garden->garden_name ?? '') }}" required>
@@ -140,14 +45,168 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_person_name" class="form-label">Contact Person <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('contact_person_name') is-invalid @enderror" 
+                                   id="contact_person_name" name="contact_person_name" 
+                                   value="{{ old('contact_person_name', $garden->contact_person_name ?? '') }}" required>
+                            @error('contact_person_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="mobile_no" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('mobile_no') is-invalid @enderror" 
+                                   id="mobile_no" name="mobile_no" 
+                                   value="{{ old('mobile_no', $garden->mobile_no ?? '') }}" required>
+                            @error('mobile_no')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                                   id="email" name="email" 
+                                   value="{{ old('email', $garden->email ?? '') }}">
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                            <textarea class="form-control @error('address') is-invalid @enderror" 
+                                      id="address" name="address" rows="3" required>{{ old('address', $garden->address ?? '') }}</textarea>
+                            @error('address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control @error('city') is-invalid @enderror" 
+                                   id="city" name="city" 
+                                   value="{{ old('city', $garden->city ?? '') }}">
+                            @error('city')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="state" class="form-label">State</label>
+                            <select class="form-select @error('state') is-invalid @enderror" id="state" name="state">
+                                <option value="">Select State</option>
+                                @foreach(\App\Models\Garden::getStatesOptions() as $key => $value)
+                                    <option value="{{ $key }}" {{ old('state', $garden->state ?? '') == $key ? 'selected' : '' }}>
+                                        {{ $value }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('state')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="pincode" class="form-label">Pincode</label>
+                            <input type="text" class="form-control @error('pincode') is-invalid @enderror" 
+                                   id="pincode" name="pincode" 
+                                   value="{{ old('pincode', $garden->pincode ?? '') }}">
+                            @error('pincode')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Multiple Category Tea Selection System -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-leaf me-2"></i>Tea Varieties Selection
+                                <button type="button" class="btn btn-sm btn-outline-success float-end" onclick="addCategorySelection()">
+                                    <i class="fas fa-plus me-1"></i>Add Category
+                                </button>
+                            </h6>
+                        </div>
                         
+                        <div class="col-12" id="category-selections-container">
+                            <!-- Category selections will be added here dynamically -->
+                        </div>
+
+                        <!-- Final Tea Selection Based on All Filters -->
+                        <div class="col-12 mt-4" id="final-tea-selection" style="display: none;">
+                            <div class="card border-success">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-success">
+                                        <i class="fas fa-check-circle me-2"></i>Available Tea Varieties
+                                        <span class="badge bg-success ms-2" id="available-tea-count">0</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <label class="form-label">Select Tea Varieties <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('tea_ids') is-invalid @enderror" 
+                                            id="tea_ids" name="tea_ids[]" multiple required>
+                                        <!-- Options will be populated dynamically -->
+                                    </select>
+                                    @error('tea_ids')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tea varieties are filtered based on your category, tea type, and grade code selections above.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- POC Assignment -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-user-tie me-2"></i>Point of Contact
+                            </h6>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="poc_ids" class="form-label">
+                                <i class="fas fa-users me-1"></i>Assigned POCs
+                            </label>
+                            <select class="form-select @error('poc_ids') is-invalid @enderror" 
+                                    id="poc_ids" name="poc_ids[]" multiple>
+                                @foreach($pocs as $poc)
+                                    <option value="{{ $poc->id }}" 
+                                            {{ in_array($poc->id, old('poc_ids', $garden->poc_ids ?? [])) ? 'selected' : '' }}>
+                                        {{ $poc->poc_name }} ({{ $poc->designation }}) - {{ $poc->poc_type_text }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('poc_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select one or more POCs who will handle this garden.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status & Remarks -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-cog me-2"></i>Additional Information
+                            </h6>
+                        </div>
+
                         <div class="col-md-6 mb-3">
                             <label for="status" class="form-label">Status</label>
-                            <select class="form-select @error('status') is-invalid @enderror" 
-                                    id="status" name="status">
-                                @foreach($statusOptions as $value => $label)
-                                    <option value="{{ $value }}" 
-                                            {{ old('status', $garden->status ?? 1) == $value ? 'selected' : '' }}>
+                            <select class="form-select @error('status') is-invalid @enderror" id="status" name="status">
+                                @foreach(\App\Models\Garden::getStatusOptions() as $key => $label)
+                                    <option value="{{ $key }}" {{ old('status', ($garden->status ?? true) ? '1' : '0') == $key ? 'selected' : '' }}>
                                         {{ $label }}
                                     </option>
                                 @endforeach
@@ -157,258 +216,25 @@
                             @enderror
                         </div>
 
-                     
-
-
-                         <div class="col-md-6 mb-3">
-                            <label for="poc" class="form-label">POC</label>
-                            <select class="form-select @error('poc') is-invalid @enderror" 
-                                    id="poc" name="poc">
-                                    <option value="">** Select Poc **</option>
-                                @foreach($pocs as $poc)
-                                    <option value="{{ $poc->id }}" 
-                                            {{ old('poc') ? 'selected' : '' }}>
-                                        {{ $poc->poc_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('poc')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="address" class="form-label">
-                                Address <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control @error('address') is-invalid @enderror" 
-                                      id="address" name="address" rows="3" required>{{ old('address', $garden->address ?? '') }}</textarea>
-                            @error('address')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- Contact Information -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-user me-2"></i>Contact Information
-                            </h6>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="contact_person_name" class="form-label">
-                                Contact Person Name <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control @error('contact_person_name') is-invalid @enderror" 
-                                   id="contact_person_name" name="contact_person_name" 
-                                   value="{{ old('contact_person_name', $garden->contact_person_name ?? '') }}" required>
-                            @error('contact_person_name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="mobile_no" class="form-label">
-                                Mobile Number <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control @error('mobile_no') is-invalid @enderror" 
-                                   id="mobile_no" name="mobile_no" 
-                                   value="{{ old('mobile_no', $garden->mobile_no ?? '') }}" required>
-                            @error('mobile_no')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" 
-                                   value="{{ old('email', $garden->email ?? '') }}">
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- Location Information -->
-                   <div class="row mb-4">
-    <div class="col-12">
-        <h6 class="text-primary border-bottom pb-2 mb-3">
-            <i class="fas fa-map-marker-alt me-2"></i>Location Information
-        </h6>
-    </div>
-    
-    <!-- Address Fields Row -->
-    <div class="col-md-4 mb-3">
-        <label for="city" class="form-label">City</label>
-        <input type="text" class="form-control @error('city') is-invalid @enderror" 
-               id="city" name="city" 
-               value="{{ old('city', $garden->city ?? '') }}">
-        @error('city')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-    
-    <div class="col-md-4 mb-3">
-        <label for="state" class="form-label">State</label>
-        <select class="form-select @error('state') is-invalid @enderror" 
-                id="state" name="state">
-            <option value="">Select State</option>
-            @foreach($states as $value => $label)
-                <option value="{{ $value }}" 
-                        {{ old('state', $garden->state ?? '') == $value ? 'selected' : '' }}>
-                    {{ $label }}
-                </option>
-            @endforeach
-        </select>
-        @error('state')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-    
-    <div class="col-md-4 mb-3">
-        <label for="pincode" class="form-label">Pincode</label>
-        <input type="text" class="form-control @error('pincode') is-invalid @enderror" 
-               id="pincode" name="pincode" 
-               value="{{ old('pincode', $garden->pincode ?? '') }}">
-        @error('pincode')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-
-    <!-- Location Picker Section -->
-    <div class="col-12 mb-4">
-        <div class="card border">
-            <div class="card-header bg-light">
-                <h6 class="mb-0">
-                    <i class="fas fa-map me-2"></i>Location Picker
-                    <small class="text-muted ms-2">Click on the map to set garden location</small>
-                </h6>
-            </div>
-            <div class="card-body">
-                <!-- Coordinate Display -->
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label for="latitude" class="form-label">
-                            Latitude
-                            <span class="text-info ms-1" title="Click on map to set location">
-                                <i class="fas fa-info-circle"></i>
-                            </span>
-                        </label>
-                        <input type="number" step="any" class="form-control @error('latitude') is-invalid @enderror" 
-                               id="latitude" name="latitude" 
-                               value="{{ old('latitude', $garden->latitude ?? '') }}" 
-                               placeholder="e.g., 28.6139" readonly>
-                        @error('latitude')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <label for="longitude" class="form-label">
-                            Longitude
-                            <span class="text-info ms-1" title="Click on map to set location">
-                                <i class="fas fa-info-circle"></i>
-                            </span>
-                        </label>
-                        <input type="number" step="any" class="form-control @error('longitude') is-invalid @enderror" 
-                               id="longitude" name="longitude" 
-                               value="{{ old('longitude', $garden->longitude ?? '') }}" 
-                               placeholder="e.g., 77.2090" readonly>
-                        @error('longitude')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-4 d-flex align-items-end">
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-primary" id="getCurrentLocation">
-                                <i class="fas fa-crosshairs me-1"></i> My Location
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="clearLocation">
-                                <i class="fas fa-times me-1"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Map Container -->
-                <div class="row">
-                    <div class="col-12">
-                        <div id="locationMap" style="height: 400px; border: 1px solid #dee2e6; border-radius: 0.375rem;">
-                            <div class="d-flex justify-content-center align-items-center h-100 bg-light">
-                                <div class="text-center">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading map...</span>
-                                    </div>
-                                    <div class="mt-2 text-muted">Loading map...</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-text mt-2">
-                            <i class="fas fa-mouse-pointer me-1"></i>
-                            <strong>Instructions:</strong> Click anywhere on the map to set the garden location. 
-                            Use the "My Location" button to get your current position, or manually click to place the marker.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Other Fields -->
-    <div class="col-md-6 mb-3">
-        <label for="altitude" class="form-label">Altitude (in meters)</label>
-        <input type="number" step="0.01" min="0" class="form-control @error('altitude') is-invalid @enderror" 
-               id="altitude" name="altitude" 
-               value="{{ old('altitude', $garden->altitude ?? '') }}">
-        @error('altitude')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-    
-    <div class="col-md-6 mb-3">
-        <label for="speciality" class="form-label">Garden Speciality</label>
-        <input type="text" class="form-control @error('speciality') is-invalid @enderror" 
-               id="speciality" name="speciality" 
-               value="{{ old('speciality', $garden->speciality ?? '') }}"
-               placeholder="e.g., Organic, High Altitude, Award Winning">
-        @error('speciality')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
-</div>
-
-                    <!-- Additional Information -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-clipboard me-2"></i>Additional Information
-                            </h6>
-                        </div>
-                        
                         <div class="col-12 mb-3">
                             <label for="remarks" class="form-label">Remarks</label>
                             <textarea class="form-control @error('remarks') is-invalid @enderror" 
-                                      id="remarks" name="remarks" rows="3" 
-                                      placeholder="Any additional notes about this garden">{{ old('remarks', $garden->remarks ?? '') }}</textarea>
+                                      id="remarks" name="remarks" rows="3">{{ old('remarks', $garden->remarks ?? '') }}</textarea>
                             @error('remarks')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
 
-                    <!-- Form Actions -->
+                    <!-- Submit Button -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{{ route('admin.gardens.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times me-1"></i> Cancel
-                                </a>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary me-md-2" onclick="window.history.back()">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i> 
+                                    <i class="fas fa-save me-1"></i>
                                     {{ isset($garden) ? 'Update Garden' : 'Create Garden' }}
                                 </button>
                             </div>
@@ -427,23 +253,49 @@
                 <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Garden Information</h6>
             </div>
             <div class="card-body">
-                <p class="small mb-3">
-                    Register tea gardens with their contact information and associate them 
-                    with the specific tea varieties they produce.
-                </p>
-
-                <div class="card border-0 bg-light">
-                    <div class="card-body">
-                        <h6 class="text-primary">Required Information</h6>
-                        <ul class="mb-0 small">
-                            <li><strong>Garden Name:</strong> Official name of the tea garden</li>
-                            <li><strong>Address:</strong> Complete physical address</li>
-                            <li><strong>Contact Person:</strong> Primary contact for communication</li>
-                            <li><strong>Mobile Number:</strong> Contact number for the person</li>
-                            <li><strong>Tea Selection:</strong> Complete the filters to select tea varieties</li>
-                        </ul>
-                    </div>
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Multi-Category Selection:</h6>
+                    <ul class="mb-0 small">
+                        <li>Gardens can produce <strong>multiple tea categories</strong></li>
+                        <li>Add each category separately with its tea types and grade codes</li>
+                        <li>System will show all matching tea varieties for selection</li>
+                        <li>Use filters to narrow down available options</li>
+                    </ul>
                 </div>
+
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-cogs me-2"></i>How it works:</h6>
+                    <ol class="mb-0 small">
+                        <li>Click "Add Category" to add tea categories</li>
+                        <li>For each category, select tea types</li>
+                        <li>Optionally filter by specific grade codes</li>
+                        <li>View and select from filtered tea varieties</li>
+                    </ol>
+                </div>
+
+                @if(isset($garden))
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-calendar me-2"></i>Garden Details:</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Created:</strong> {{ $garden->created_at->format('M d, Y') }}</li>
+                        <li><strong>Last Updated:</strong> {{ $garden->updated_at->format('M d, Y') }}</li>
+                        <li><strong>Current Tea Varieties:</strong> {{ $garden->teas ? $garden->teas->count() : 0 }}</li>
+                        <li><strong>Status:</strong> {{ $garden->status ? 'Active' : 'Inactive' }}</li>
+                    </ul>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Selection Summary -->
+        <div class="card mt-3" id="selection-summary-card" style="display: none;">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Selection Summary
+                </h6>
+            </div>
+            <div class="card-body" id="selection-summary-content">
+                <!-- Dynamic content will be populated here -->
             </div>
         </div>
     </div>
@@ -452,522 +304,432 @@
 
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
-      crossorigin=""/>
 <style>
+.category-selection-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    background-color: #f8f9fa;
+}
+
+.category-selection-item .remove-category-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.tea-type-checkbox, .grade-code-checkbox {
+    margin: 0.25rem;
+}
+
+.checkbox-group {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    background-color: white;
+}
+
 .select2-selection.is-invalid {
     border-color: #dc3545 !important;
 }
 
-#filtered_grade_codes {
-    min-height: 80px;
-}
-
-.form-text {
-    font-size: 0.875rem;
-    color: #6c757d;
-}
-
-.leaflet-container {
-    font-family: inherit;
-}
-
-.map-marker-popup {
+.no-results-message {
+    padding: 1rem;
     text-align: center;
-}
-
-.map-marker-popup .btn {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
-#locationMap .leaflet-control-attribution {
-    font-size: 10px;
-    background: rgba(255, 255, 255, 0.8);
-}
-
-.location-info-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    display: none;
+    color: #6c757d;
+    font-style: italic;
 }
 </style>
 @endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
-        crossorigin=""></script>
 <script>
+let categoryIndex = 0;
+let allSelectedFilters = [];
 
-    let map;
-let marker;
-let defaultLat = 28.6139;
-let defaultLng = 77.2090;
 $(document).ready(function() {
-    // Initialize Select2 for POC dropdown
-    $('#poc').select2({
+    // Initialize POC Select2
+    $('#poc_ids').select2({
         theme: 'bootstrap-5',
         width: '100%',
-        placeholder: 'Select POC...',
-        allowClear: true
-    });
-
-        initializeLocationMap();
-
-
-    // Initialize Select2 for multi-select grade codes
-    $('#filtered_grade_codes').select2({
-        theme: 'bootstrap-5',
-        width: '100%',
-        placeholder: 'Select grade codes...',
+        placeholder: 'Select POCs...',
         allowClear: true,
         closeOnSelect: false
     });
 
-    // Dependent dropdown logic
-    $('#selected_category').on('change', function() {
-        const category = $(this).val();
-        const teaTypeSelect = $('#selected_tea_type');
-        const gradeCodesSelect = $('#filtered_grade_codes');
-        
-        // Reset dependent dropdowns
-        teaTypeSelect.html('<option value="">Select Tea Type</option>').prop('disabled', !category);
-        gradeCodesSelect.html('<option value="">Select grade codes</option>').prop('disabled', true);
-        
-        // Reset Select2 for grade codes
-        gradeCodesSelect.select2('destroy');
-        gradeCodesSelect.select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'First select tea type...',
-            allowClear: true,
-            closeOnSelect: false
-        });
-        
-        if (category) {
-            // Fetch tea types for selected category
-            $.ajax({
-                url: '{{ route("admin.tea-types-by-category") }}',
-                method: 'GET',
-                data: { category: category },
-                success: function(response) {
-                    $.each(response.tea_types, function(key, value) {
-                        teaTypeSelect.append(`<option value="${key}">${value}</option>`);
-                    });
-                    teaTypeSelect.prop('disabled', false);
-                },
-                error: function() {
-                    alert('Error loading tea types. Please try again.');
-                }
-            });
-        }
-        
-        updateFilteredTeaSelection();
-    });
-    
-    $('#selected_tea_type').on('change', function() {
-        const teaType = $(this).val();
-        const gradeCodesSelect = $('#filtered_grade_codes');
-        
-        // Reset grade codes
-        gradeCodesSelect.html('<option value="">Select grade codes</option>').prop('disabled', !teaType);
-        
-        // Reset Select2
-        gradeCodesSelect.select2('destroy');
-        gradeCodesSelect.select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: teaType ? 'Select grade codes...' : 'First select tea type...',
-            allowClear: true,
-            closeOnSelect: false
-        });
-        
-        if (teaType) {
-            // Fetch grade codes for selected tea type
-            $.ajax({
-                url: '{{ route("admin.grade-codes-by-tea-type") }}',
-                method: 'GET', 
-                data: { tea_type: teaType },
-                success: function(response) {
-                    gradeCodesSelect.empty(); // Clear options first
-                    $.each(response.grade_codes, function(index, value) {
-                        gradeCodesSelect.append(`<option value="${value}">${value}</option>`);
-                    });
-                    gradeCodesSelect.prop('disabled', false);
-                    
-                    // Refresh Select2
-                    gradeCodesSelect.select2('destroy');
-                    gradeCodesSelect.select2({
-                        theme: 'bootstrap-5',
-                        width: '100%',
-                        placeholder: 'Select grade codes...',
-                        allowClear: true,
-                        closeOnSelect: false
-                    });
-                },
-                error: function() {
-                    alert('Error loading grade codes. Please try again.');
-                }
-            });
-        }
-        
-        updateFilteredTeaSelection();
-    });
-    
-    $('#filtered_grade_codes').on('change', function() {
-        updateFilteredTeaSelection();
-    });
-    
-    function updateFilteredTeaSelection() {
-        const category = $('#selected_category').val();
-        const teaType = $('#selected_tea_type').val();
-        const gradeCodes = $('#filtered_grade_codes').val() || [];
-        
-        if (category && teaType) {
-            // Show loading message
-            $('#filtered-tea-selection').html(`
-                <div class="alert alert-info">
-                    <i class="fas fa-spinner fa-spin me-2"></i>
-                    Loading tea varieties...
-                </div>
-            `);
-            
-            // Fetch filtered teas based on selections
-            $.ajax({
-                url: '{{ route("admin.filtered-teas") }}',
-                method: 'GET',
-                data: { 
-                    category: category, 
-                    tea_type: teaType,
-                    grade_codes: gradeCodes
-                },
-                success: function(response) {
-                    if (response.teas && response.teas.length > 0) {
-                        let html = `
-                            <label class="form-label">Select Tea Varieties <span class="text-danger">*</span></label>
-                            <select class="form-select" id="tea_ids" name="tea_ids[]" multiple required>
-                        `;
-                        
-                        $.each(response.teas, function(index, tea) {
-                            html += `<option value="${tea.id}">${tea.full_name}</option>`;
-                        });
-                        
-                        html += '</select>';
-                        html += '<div class="form-text">Hold Ctrl (or Cmd) to select multiple tea varieties</div>';
-                        
-                        $('#filtered-tea-selection').html(html);
-                        
-                        // Initialize Select2 for the new select
-                        $('#tea_ids').select2({
-                            theme: 'bootstrap-5',
-                            width: '100%',
-                            placeholder: 'Select tea varieties...',
-                            allowClear: true,
-                            closeOnSelect: false
-                        });
-                    } else {
-                        $('#filtered-tea-selection').html(`
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                No tea varieties found for the selected filters.
-                            </div>
-                        `);
-                    }
-                },
-                error: function() {
-                    $('#filtered-tea-selection').html(`
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            Error loading tea varieties. Please try again.
-                        </div>
-                    `);
-                }
-            });
-        } else {
-            $('#filtered-tea-selection').html(`
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Please complete the category and tea type selection above to see available tea varieties.
-                </div>
-            `);
-        }
-    }
-
-    // Form validation
-    $('#gardenForm').on('submit', function(e) {
-        let isValid = true;
-        
-        // Check required fields
-        const requiredFields = ['garden_name', 'address', 'contact_person_name', 'mobile_no', 'selected_category', 'selected_tea_type'];
-        requiredFields.forEach(function(field) {
-            const input = $(`#${field}`);
-            if (!input.val() || !input.val().trim()) {
-                input.addClass('is-invalid');
-                isValid = false;
-            } else {
-                input.removeClass('is-invalid');
-            }
-        });
-        
-        // Check tea selection
-        const selectedTeas = $('#tea_ids').val();
-        if (!selectedTeas || selectedTeas.length === 0) {
-            if ($('#tea_ids').length > 0) {
-                $('#tea_ids').next('.select2-container').find('.select2-selection').addClass('is-invalid');
-                isValid = false;
-            } else {
-                alert('Please complete the tea selection filters and select at least one tea variety.');
-                isValid = false;
-            }
-        } else if ($('#tea_ids').length > 0) {
-            $('#tea_ids').next('.select2-container').find('.select2-selection').removeClass('is-invalid');
-        }
-        
-        // Email validation if provided
-        const email = $('#email').val();
-        if (email && email.trim()) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                $('#email').addClass('is-invalid');
-                isValid = false;
-            }
-        }
-        
-        if (!isValid) {
-            e.preventDefault();
-            alert('Please fill in all required fields correctly.');
-        }
-    });
-    
-    // Real-time validation
-    // $('.form-control, .form-select').on('input change', function() {
-    //     if ($(this).val() && $(this).val().trim()) {
-    //         $(this).removeClass('is-invalid');
-    //     }
-    // });
-    
-    // Select2 validation for tea selection
-    $(document).on('change', '#tea_ids', function() {
-        const selectedTeas = $(this).val();
-        if (selectedTeas && selectedTeas.length > 0) {
-            $(this).next('.select2-container').find('.select2-selection').removeClass('is-invalid');
-        }
+    // Initialize final tea selection Select2
+    $('#tea_ids').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'No tea varieties available yet...',
+        allowClear: true,
+        closeOnSelect: false
     });
 
-    // Initialize if editing existing garden
-    @if(isset($garden) && $garden->selected_category)
-        $('#selected_category').trigger('change');
-        setTimeout(function() {
-            $('#selected_tea_type').val('{{ $garden->selected_tea_type }}').trigger('change');
-            
-            setTimeout(function() {
-                @if(isset($garden->filtered_grade_codes))
-                    $('#filtered_grade_codes').val({!! json_encode($garden->filtered_grade_codes) !!}).trigger('change');
-                @endif
-            }, 1000);
-        }, 500);
+    // Add initial category selection
+    addCategorySelection();
+
+    // Load existing data if editing
+    @if(isset($garden) && $garden->category_filters)
+        // Load existing category filters if available
+        loadExistingCategoryFilters();
     @endif
 });
 
-function initializeLocationMap() {
-    // Initialize map with default center (Delhi, India)
-    map = L.map('locationMap').setView([defaultLat, defaultLng], 6);
+function addCategorySelection() {
+    const container = document.getElementById('category-selections-container');
+    const index = categoryIndex++;
     
-    // Add OpenStreetMap tiles (no API key required)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(map);
+    const html = `
+        <div class="category-selection-item" id="category-selection-${index}">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-category-btn" onclick="removeCategorySelection(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <h6 class="text-secondary">
+                        <i class="fas fa-tag me-2"></i>Category Set ${index + 1}
+                    </h6>
+                </div>
+                
+                <!-- Category Selection -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Select Category <span class="text-danger">*</span></label>
+                    <select class="form-select" id="category_${index}" name="category_filters[${index}][category]" 
+                            onchange="loadTeaTypes(${index})" required>
+                        <option value="">Choose Category</option>
+                        @foreach(\App\Models\Tea::getCategoryOptions() as $key => $value)
+                            <option value="{{ $key }}">{{ $value }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Tea Types (Multiple Selection) -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Select Tea Types</label>
+                    <div class="checkbox-group" id="tea_types_${index}">
+                        <div class="no-results-message">Select a category first</div>
+                    </div>
+                </div>
+                
+                <!-- Grade Codes (Multiple Selection) -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Filter by Grade Codes <small class="text-muted">(Optional)</small></label>
+                    <div class="checkbox-group" id="grade_codes_${index}">
+                        <div class="no-results-message">Select tea types first</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    updateSelectionSummary();
+}
 
-    // Initialize marker if coordinates exist
-    const existingLat = $('#latitude').val();
-    const existingLng = $('#longitude').val();
+function removeCategorySelection(index) {
+    document.getElementById(`category-selection-${index}`).remove();
+    updateFinalTeaSelection();
+    updateSelectionSummary();
+}
+
+function loadTeaTypes(categoryIndex) {
+    const category = document.getElementById(`category_${categoryIndex}`).value;
+    const container = document.getElementById(`tea_types_${categoryIndex}`);
     
-    if (existingLat && existingLng) {
-        setMarker(parseFloat(existingLat), parseFloat(existingLng));
-        map.setView([existingLat, existingLng], 13);
+    // Clear existing selections
+    container.innerHTML = '<div class="no-results-message">Loading...</div>';
+    document.getElementById(`grade_codes_${categoryIndex}`).innerHTML = '<div class="no-results-message">Select tea types first</div>';
+    
+    if (!category) {
+        container.innerHTML = '<div class="no-results-message">Select a category first</div>';
+        return;
     }
-
-    // Map click event to set location
-    map.on('click', function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-        setMarker(lat, lng);
-        updateCoordinateFields(lat, lng);
-    });
-
-    // Get current location button
-    $('#getCurrentLocation').on('click', function() {
-        const btn = $(this);
-        const originalHtml = btn.html();
-        
-        btn.html('<i class="fas fa-spinner fa-spin me-1"></i> Getting Location...').prop('disabled', true);
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    
-                    setMarker(lat, lng);
-                    updateCoordinateFields(lat, lng);
-                    map.setView([lat, lng], 15);
-                    
-                    btn.html(originalHtml).prop('disabled', false);
-                    showNotification('Location set successfully!', 'success');
-                },
-                function(error) {
-                    btn.html(originalHtml).prop('disabled', false);
-                    let errorMsg = 'Unable to get your location. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMsg += 'Location access denied by user.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMsg += 'Location information unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMsg += 'Location request timed out.';
-                            break;
-                        default:
-                            errorMsg += 'An unknown error occurred.';
-                    }
-                    showNotification(errorMsg, 'error');
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000
-                }
-            );
-        } else {
-            btn.html(originalHtml).prop('disabled', false);
-            showNotification('Geolocation is not supported by this browser.', 'error');
+    
+    // Fetch tea types for category
+    $.ajax({
+        url: '{{ route("admin.teas.tea-types-by-category") }}',
+        method: 'GET',
+        data: { category: category },
+        success: function(response) {
+            let html = '';
+            $.each(response.tea_types, function(key, value) {
+                html += `
+                    <div class="form-check tea-type-checkbox">
+                        <input class="form-check-input" type="checkbox" value="${key}" 
+                               id="tea_type_${categoryIndex}_${key}" 
+                               name="category_filters[${categoryIndex}][tea_types][]"
+                               onchange="loadGradeCodes(${categoryIndex})">
+                        <label class="form-check-label" for="tea_type_${categoryIndex}_${key}">
+                            ${value}
+                        </label>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || '<div class="no-results-message">No tea types found</div>';
+        },
+        error: function() {
+            container.innerHTML = '<div class="no-results-message">Error loading tea types</div>';
         }
     });
+}
 
-    // Clear location button
-    $('#clearLocation').on('click', function() {
-        clearMarker();
-        updateCoordinateFields('', '');
-        map.setView([defaultLat, defaultLng], 6);
-        showNotification('Location cleared.', 'info');
+function loadGradeCodes(categoryIndex) {
+    const selectedTeaTypes = [];
+    document.querySelectorAll(`input[name="category_filters[${categoryIndex}][tea_types][]"]:checked`).forEach(function(checkbox) {
+        selectedTeaTypes.push(checkbox.value);
+    });
+    
+    const container = document.getElementById(`grade_codes_${categoryIndex}`);
+    
+    if (selectedTeaTypes.length === 0) {
+        container.innerHTML = '<div class="no-results-message">Select tea types first</div>';
+        updateFinalTeaSelection();
+        return;
+    }
+    
+    container.innerHTML = '<div class="no-results-message">Loading grade codes...</div>';
+    
+    // Fetch existing grade codes for selected tea types
+    $.ajax({
+        url: '{{ route("admin.teas.existing-grade-codes") }}',
+        method: 'GET',
+        data: { tea_types: selectedTeaTypes },
+        success: function(response) {
+            let html = '';
+            if (response.grade_codes && response.grade_codes.length > 0) {
+                response.grade_codes.forEach(function(gradeCode) {
+                    html += `
+                        <div class="form-check grade-code-checkbox">
+                            <input class="form-check-input" type="checkbox" value="${gradeCode}" 
+                                   id="grade_code_${categoryIndex}_${gradeCode}" 
+                                   name="category_filters[${categoryIndex}][grade_codes][]"
+                                   onchange="updateFinalTeaSelection()">
+                            <label class="form-check-label" for="grade_code_${categoryIndex}_${gradeCode}">
+                                ${gradeCode}
+                            </label>
+                        </div>
+                    `;
+                });
+                html += `
+                    <hr>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllGradeCodes(${categoryIndex})">
+                            Select All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllGradeCodes(${categoryIndex})">
+                            Clear All
+                        </button>
+                    </div>
+                `;
+            } else {
+                html = '<div class="no-results-message">No existing grade codes found for selected tea types</div>';
+            }
+            
+            container.innerHTML = html;
+            updateFinalTeaSelection();
+        },
+        error: function() {
+            container.innerHTML = '<div class="no-results-message">Error loading grade codes</div>';
+        }
     });
 }
 
-function setMarker(lat, lng) {
-    // Remove existing marker
-    if (marker) {
-        map.removeLayer(marker);
-    }
+function selectAllGradeCodes(categoryIndex) {
+    document.querySelectorAll(`#grade_codes_${categoryIndex} input[type="checkbox"]`).forEach(function(checkbox) {
+        checkbox.checked = true;
+    });
+    updateFinalTeaSelection();
+}
+
+function clearAllGradeCodes(categoryIndex) {
+    document.querySelectorAll(`#grade_codes_${categoryIndex} input[type="checkbox"]`).forEach(function(checkbox) {
+        checkbox.checked = false;
+    });
+    updateFinalTeaSelection();
+}
+
+function updateFinalTeaSelection() {
+    // Collect all filter criteria
+    const allFilters = [];
     
-    // Create new marker
-    marker = L.marker([lat, lng], {
-        draggable: true
-    }).addTo(map);
-    
-    // Marker popup
-    marker.bindPopup(`
-        <div class="map-marker-popup">
-            <strong>Garden Location</strong><br>
-            <small>Lat: ${lat.toFixed(6)}<br>
-            Lng: ${lng.toFixed(6)}</small><br>
-            <button type="button" class="btn btn-sm btn-outline-danger mt-1" onclick="clearMarker()">
-                <i class="fas fa-trash"></i> Remove
-            </button>
-        </div>
-    `).openPopup();
-    
-    // Handle marker drag
-    marker.on('dragend', function(e) {
-        const newLat = e.target.getLatLng().lat;
-        const newLng = e.target.getLatLng().lng;
-        updateCoordinateFields(newLat, newLng);
+    document.querySelectorAll('.category-selection-item').forEach(function(item, index) {
+        const categorySelect = item.querySelector('select[name*="[category]"]');
+        const category = categorySelect ? categorySelect.value : '';
         
-        // Update popup
-        marker.setPopupContent(`
-            <div class="map-marker-popup">
-                <strong>Garden Location</strong><br>
-                <small>Lat: ${newLat.toFixed(6)}<br>
-                Lng: ${newLng.toFixed(6)}</small><br>
-                <button type="button" class="btn btn-sm btn-outline-danger mt-1" onclick="clearMarker()">
-                    <i class="fas fa-trash"></i> Remove
-                </button>
-            </div>
-        `);
+        if (!category) return;
+        
+        const teaTypes = [];
+        item.querySelectorAll('input[name*="[tea_types]"]:checked').forEach(function(checkbox) {
+            teaTypes.push(checkbox.value);
+        });
+        
+        const gradeCodes = [];
+        item.querySelectorAll('input[name*="[grade_codes]"]:checked').forEach(function(checkbox) {
+            gradeCodes.push(checkbox.value);
+        });
+        
+        if (teaTypes.length > 0) {
+            allFilters.push({
+                categories: [category],
+                tea_types: teaTypes,
+                grade_codes: gradeCodes
+            });
+        }
+    });
+    
+    allSelectedFilters = allFilters;
+    
+    if (allFilters.length === 0) {
+        $('#final-tea-selection').hide();
+        $('#tea_ids').empty().trigger('change');
+        updateSelectionSummary();
+        return;
+    }
+    
+    // Fetch filtered tea varieties
+    $.ajax({
+        url: '{{ route("admin.teas.filtered-teas-multiple") }}',
+        method: 'POST',
+        data: { 
+            filters: allFilters,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            const teaSelect = $('#tea_ids');
+            teaSelect.empty();
+            
+            if (response.teas && response.teas.length > 0) {
+                response.teas.forEach(function(tea) {
+                    teaSelect.append(`<option value="${tea.id}">${tea.full_name}</option>`);
+                });
+                
+                $('#available-tea-count').text(response.teas.length);
+                $('#final-tea-selection').show();
+                
+                // Restore selected values if editing
+                @if(isset($garden) && $garden->tea_ids)
+                    teaSelect.val(@json($garden->tea_ids)).trigger('change');
+                @endif
+            } else {
+                $('#final-tea-selection').hide();
+            }
+            
+            updateSelectionSummary();
+        },
+        error: function() {
+            $('#final-tea-selection').hide();
+            alert('Error loading tea varieties. Please try again.');
+        }
     });
 }
 
-function clearMarker() {
-    if (marker) {
-        map.removeLayer(marker);
-        marker = null;
+function updateSelectionSummary() {
+    const summaryCard = document.getElementById('selection-summary-card');
+    const summaryContent = document.getElementById('selection-summary-content');
+    
+    if (allSelectedFilters.length === 0) {
+        summaryCard.style.display = 'none';
+        return;
     }
+    
+    let html = '<div class="small">';
+    allSelectedFilters.forEach(function(filter, index) {
+        html += `
+            <div class="mb-2">
+                <strong>Set ${index + 1}:</strong><br>
+                <span class="text-muted">Categories:</span> ${filter.categories.join(', ')}<br>
+                <span class="text-muted">Tea Types:</span> ${filter.tea_types.join(', ')}<br>
+                ${filter.grade_codes.length > 0 ? '<span class="text-muted">Grade Codes:</span> ' + filter.grade_codes.join(', ') : '<span class="text-muted">All Grade Codes</span>'}
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    summaryContent.innerHTML = html;
+    summaryCard.style.display = 'block';
 }
 
-function updateCoordinateFields(lat, lng) {
-    $('#latitude').val(lat ? lat.toFixed(6) : '');
-    $('#longitude').val(lng ? lng.toFixed(6) : '');
-    
-    // Remove validation errors when coordinates are set
-    if (lat && lng) {
-        $('#latitude, #longitude').removeClass('is-invalid');
-    }
-}
-
-function showNotification(message, type) {
-    const alertClass = type === 'success' ? 'alert-success' : 
-                      type === 'error' ? 'alert-danger' : 'alert-info';
-    
-    const notification = $(`
-        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `);
-    
-    $('body').append(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(function() {
-        notification.alert('close');
-    }, 5000);
-}
-
-// Enhanced form validation to include coordinates
+// Form validation
 $('#gardenForm').on('submit', function(e) {
     let isValid = true;
     
-    // ... your existing validation code ...
+    // Validate required fields
+    const requiredFields = ['garden_name', 'contact_person_name', 'mobile_no', 'address'];
+    requiredFields.forEach(function(field) {
+        const input = $(`#${field}`);
+        if (!input.val() || !input.val().trim()) {
+            input.addClass('is-invalid');
+            isValid = false;
+        } else {
+            input.removeClass('is-invalid');
+        }
+    });
     
-    // Optional: Validate coordinates if required
-    const lat = $('#latitude').val();
-    const lng = $('#longitude').val();
-    
-    // Uncomment below if you want to make location mandatory
-    /*
-    if (!lat || !lng) {
-        $('#latitude, #longitude').addClass('is-invalid');
-        showNotification('Please select a location on the map.', 'error');
+    // Validate tea selection
+    const selectedTeas = $('#tea_ids').val();
+    if (!selectedTeas || selectedTeas.length === 0) {
+        alert('Please select at least one tea variety.');
         isValid = false;
     }
-    */
     
     if (!isValid) {
         e.preventDefault();
+        alert('Please fill in all required fields and select tea varieties.');
     }
 });
+
+@if(isset($garden) && $garden->category_filters)
+function loadExistingCategoryFilters() {
+    const existingFilters = @json($garden->category_filters);
+    
+    // Clear initial empty category selection
+    document.getElementById('category-selections-container').innerHTML = '';
+    categoryIndex = 0;
+    
+    if (existingFilters && existingFilters.length > 0) {
+        existingFilters.forEach(function(filter, index) {
+            addCategorySelection();
+            
+            // Set category
+            setTimeout(function() {
+                document.getElementById(`category_${index}`).value = filter.category;
+                loadTeaTypes(index);
+                
+                // Set tea types after a delay
+                setTimeout(function() {
+                    if (filter.tea_types) {
+                        filter.tea_types.forEach(function(teaType) {
+                            const checkbox = document.getElementById(`tea_type_${index}_${teaType}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                        loadGradeCodes(index);
+                        
+                        // Set grade codes after another delay
+                        setTimeout(function() {
+                            if (filter.grade_codes) {
+                                    const checkbox = document.getElementById(`grade_code_${index}_${gradeCode}`);
+                                    if (checkbox) checkbox.checked = true;
+                                });
+                            }
+                            updateFinalTeaSelection();
+                        }, 1000);
+                    }, 500);
+                }, 300);
+            });
+        });
+    } else {
+        // Add one empty category selection if no existing filters
+        addCategorySelection();
+    }
+}
+@endif
 </script>
 @endpush
