@@ -353,6 +353,28 @@ class BuyerController extends BaseAdminController
         }
     }
 
+
+    /**
+ * Show buyer attachment management page
+ */
+public function manageAttachments(int $id)
+{
+    try {
+        $buyer = Buyer::with(['attachments' => function($query) {
+            $query->with(['uploadedByUser', 'verifiedByUser'])->orderBy('created_at', 'desc');
+        }])->findOrFail($id);
+
+        $documentTypes = BuyerAttachment::getDocumentTypeOptions();
+        
+        return view('admin.buyers.manage-attachments', compact('buyer', 'documentTypes'));
+
+    } catch (\Exception $e) {
+        return redirect()
+            ->route('admin.buyers.index')
+            ->with('error', 'Buyer not found.');
+    }
+}
+
     /**
      * Handle multiple file attachments for buyer
      */

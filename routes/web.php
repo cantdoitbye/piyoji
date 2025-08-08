@@ -94,7 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('by-type', [BuyerController::class, 'getByType'])->name('by-type');
             Route::get('by-tea-grade', [BuyerController::class, 'getByTeaGrade'])->name('by-tea-grade');
       
-      
+      Route::get('{id}/manage-attachments', [BuyerController::class, 'manageAttachments'])->name('manage-attachments');
                   Route::post('{id}/attachments', [BuyerController::class, 'uploadAttachments'])->name('upload-attachments');
         Route::get('{id}/attachments', [BuyerController::class, 'getAttachments'])->name('get-attachments');
         Route::delete('{buyerId}/attachments/{attachmentId}', [BuyerController::class, 'deleteAttachment'])->name('delete-attachment');
