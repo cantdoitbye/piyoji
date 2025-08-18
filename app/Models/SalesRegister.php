@@ -258,4 +258,9 @@ class SalesRegister extends Model
     {
         return $query->whereBetween('entry_date', [$startDate, $endDate]);
     }
+
+    public function sample(): BelongsTo
+{
+    return $this->belongsTo(Sample::class, 'sample_id');
+}
 }

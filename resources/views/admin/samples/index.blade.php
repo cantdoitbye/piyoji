@@ -319,6 +319,34 @@
                                            title="Edit Sample">
                                             <i class="fas fa-edit"></i>
                                         </a>
+
+
+                                        <!-- Add this to your samples index.blade.php in the actions column for each sample row -->
+<!-- Add this to your samples index.blade.php in the actions column for each sample row -->
+
+@if($sample->status === 'approved' && $sample->evaluation_status === 'completed')
+    @php
+        $existsInSalesRegister = \App\Models\SalesRegister::where('sample_id', $sample->id)->exists();
+    @endphp
+    
+    @if(!$existsInSalesRegister)
+        <button type="button" 
+                class="btn btn-sm btn-success" 
+                title="Add to Sales Register"
+                data-bs-toggle="modal" 
+                data-bs-target="#addToSalesModal"
+                data-sample-id="{{ $sample->id }}"
+                data-sample-name="{{ $sample->sample_name }}"
+                data-sample-weight="{{ $sample->sample_weight }}"
+                data-sample-score="{{ $sample->overall_score }}">
+            <i class="fas fa-cash-register"></i>
+        </button>
+    @else
+        <span class="badge bg-info" title="Already in Sales Register">
+            <i class="fas fa-check"></i> In Sales
+        </span>
+    @endif
+@endif
                                     </div>
                                 </td>
                             </tr>
@@ -387,6 +415,97 @@
     </div>
 </div>
 
+
+
+<!-- Add to Sales Register Modal -->
+<div class="modal fade" id="addToSalesModal" tabindex="-1" aria-labelledby="addToSalesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToSalesModalLabel">
+                    <i class="fas fa-cash-register me-2"></i>Add Sample to Sales Register
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addToSalesForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <!-- Sample Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Sample Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Sample Name:</strong> <span id="modal-sample-name"></span></p>
+                                    <p><strong>Sample Weight:</strong> <span id="modal-sample-weight"></span> kg</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Evaluation Score:</strong> <span id="modal-sample-score"></span>/10</p>
+                                    <p><strong>Status:</strong> <span class="badge bg-success">Approved</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buyer Selection -->
+                    <div class="mb-3">
+                        <label for="buyer_id" class="form-label">
+                            <i class="fas fa-user-tie me-1"></i>Select Buyer <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="buyer_id" name="buyer_id" required>
+                            <option value="">Choose a buyer...</option>
+                            @foreach(\App\Models\Buyer::where('status', 'active')->orderBy('buyer_name')->get() as $buyer)
+                                <option value="{{ $buyer->id }}">
+                                    {{ $buyer->buyer_name }} 
+                                    <span class="text-muted">({{ ucfirst($buyer->buyer_type) }} Buyer)</span>
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Select the buyer for this sales entry</div>
+                    </div>
+
+                    <!-- Rate per KG -->
+                    <div class="mb-3">
+                        <label for="rate_per_kg" class="form-label">
+                            <i class="fas fa-rupee-sign me-1"></i>Rate per KG
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="rate_per_kg" 
+                               name="rate_per_kg" 
+                               min="0" 
+                               step="0.01" 
+                               placeholder="Enter rate per KG">
+                        <div class="form-text">Leave blank if rate will be set later</div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">
+                            <i class="fas fa-comment me-1"></i>Remarks
+                        </label>
+                        <textarea class="form-control" 
+                                  id="remarks" 
+                                  name="remarks" 
+                                  rows="3" 
+                                  placeholder="Optional remarks about this sales entry"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>Add to Sales Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -396,7 +515,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadStatsBtn = document.getElementById('loadDateStats');
     const createBatchesBtn = document.getElementById('createBatches');
     const dateStatistics = document.getElementById('dateStatistics');
-
+    const addToSalesModal = document.getElementById('addToSalesModal');
+    const addToSalesForm = document.getElementById('addToSalesForm');
+    
     // Load date statistics
     loadStatsBtn.addEventListener('click', function() {
         const date = batchDateInput.value;
@@ -496,6 +617,33 @@ document.addEventListener('DOMContentLoaded', function() {
     batchDateInput.addEventListener('change', function() {
         dateStatistics.style.display = 'none';
         createBatchesBtn.disabled = false;
+    });
+
+      addToSalesModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const sampleId = button.getAttribute('data-sample-id');
+        const sampleName = button.getAttribute('data-sample-name');
+        const sampleWeight = button.getAttribute('data-sample-weight');
+        const sampleScore = button.getAttribute('data-sample-score');
+        
+        // Update modal content
+        document.getElementById('modal-sample-name').textContent = sampleName;
+        document.getElementById('modal-sample-weight').textContent = sampleWeight || 'Not specified';
+        document.getElementById('modal-sample-score').textContent = sampleScore;
+        
+        // Set form action
+        const baseUrl = '{{ route("admin.samples.add-to-sales-register", ":id") }}';
+        addToSalesForm.action = baseUrl.replace(':id', sampleId);
+        
+        // Set default remarks
+        const remarksField = document.getElementById('remarks');
+        remarksField.value = `Added from approved sample: ${sampleName} (Score: ${sampleScore}/10)`;
+    });
+    
+    // Reset form when modal is hidden
+    addToSalesModal.addEventListener('hidden.bs.modal', function() {
+        addToSalesForm.reset();
+        document.getElementById('buyer_id').value = '';
     });
 });
 </script>

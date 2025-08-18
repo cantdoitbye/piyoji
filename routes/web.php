@@ -349,7 +349,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     //      ->name('filtered-teas');
 
 
-        
+        Route::post('{id}/add-to-sales-register', [SampleController::class, 'addToSalesRegister'])->name('samples.add-to-sales-register');
     });
 });
 

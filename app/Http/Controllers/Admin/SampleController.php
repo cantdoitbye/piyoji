@@ -3,21 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SalesRegister;
 use App\Services\SampleService;
 use App\Services\SellerService;
 use App\Services\BatchService;
 use App\Models\Sample;
+use App\Services\SalesRegisterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SampleController extends Controller
 {
     public function __construct(
         protected SampleService $sampleService,
         protected SellerService $sellerService,
-        protected BatchService $batchService
+        protected BatchService $batchService,
+        protected SalesRegisterService $salesRegisterService  // Add this line
+
     ) {}
 
     /**
@@ -396,4 +401,90 @@ class SampleController extends Controller
             'evaluation_comments' => 'nullable|string|max:1000'
         ]);
     }
+/**
+ * Add approved and evaluated sample to Sales Register
+ */
+public function addToSalesRegister(int $id, Request $request)
+{
+    try {
+        // Validate the request
+        $request->validate([
+            'buyer_id' => 'required|exists:buyers,id',
+            'rate_per_kg' => 'nullable|numeric|min:0',
+            'remarks' => 'nullable|string|max:1000'
+        ]);
+
+        $data = $request->all();
+        
+        $sample = $this->sampleService->getSampleById($id);
+        
+        if (!$sample) {
+            return redirect()->route('admin.samples.index')
+                ->with('error', 'Sample not found');
+        }
+
+        // Check if sample is approved and evaluated
+        if ($sample->status !== 'approved' || $sample->evaluation_status !== 'completed') {
+            return redirect()->back()
+                ->with('error', 'Only approved and evaluated samples can be added to Sales Register');
+        }
+
+        // Check if sample already exists in Sales Register
+        $existingSalesEntry = SalesRegister::where('sample_id', $sample->id)->first();
+        if ($existingSalesEntry) {
+            return redirect()->back()
+                ->with('error', 'This sample is already added to Sales Register with Entry ID: ' . $existingSalesEntry->sales_entry_id);
+        }
+
+        // Validate required fields
+        if (empty($data['buyer_id'])) {
+            return redirect()->back()
+                ->with('error', 'Buyer selection is required');
+        }
+
+        // Validate buyer exists
+        $buyer = \App\Models\Buyer::find($data['buyer_id']);
+        if (!$buyer) {
+            return redirect()->back()
+                ->with('error', 'Selected buyer not found');
+        }
+
+        DB::beginTransaction();
+
+        // Generate unique sales entry ID
+        $salesEntryId = SalesRegister::generateSalesEntryId();
+
+        // Calculate total amount if rate is provided
+        $totalAmount = 0;
+        if (!empty($data['rate_per_kg']) && $sample->sample_weight) {
+            $totalAmount = $data['rate_per_kg'] * $sample->sample_weight;
+        }
+
+        // Create Sales Register entry directly
+        $salesEntry = SalesRegister::create([
+            'sales_entry_id' => $salesEntryId,
+            'sample_id' => $sample->id,
+            'buyer_id' => $data['buyer_id'],
+            'product_name' => $sample->sample_name,
+            'tea_grade' => $sample->tea_grade ?? 'Not Specified',
+            'quantity_kg' => $sample->sample_weight ?? 0,
+            'rate_per_kg' => $data['rate_per_kg'] ?? 0,
+            'total_amount' => $totalAmount,
+            'entry_date' => now()->format('Y-m-d'),
+            'status' => SalesRegister::STATUS_PENDING,
+            'remarks' => $data['remarks'] ?? 'Added from approved sample: ' . $sample->sample_id . ' (Score: ' . $sample->overall_score . '/10)',
+            'created_by' => Auth::id()
+        ]);
+
+        DB::commit();
+
+        return redirect()->route('admin.sales-register.show', $salesEntry->id)
+            ->with('success', 'Sample successfully added to Sales Register! Entry ID: ' . $salesEntry->sales_entry_id);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()
+            ->with('error', 'Error adding to Sales Register: ' . $e->getMessage());
+    }
+}
 }
