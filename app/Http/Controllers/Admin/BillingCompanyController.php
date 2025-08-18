@@ -130,85 +130,107 @@ class BillingCompanyController extends BaseAdminController
         }
     }
 
-    protected function validateStore(Request $request): array
-    {
-        return $request->validate([
-            'company_name' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'email' => 'required|email|unique:billing_companies,email',
-            'phone' => 'required|string|max:20',
-            'billing_address' => 'required|string',
-            'billing_city' => 'required|string|max:255',
-            'billing_state' => 'required|string|max:255',
-            'billing_pincode' => 'required|string|max:10',
-            'gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
-            'pan' => 'nullable|string|size:10|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/',
-            'type' => 'required|in:seller,buyer,both',
-            'status' => 'boolean',
-            'remarks' => 'nullable|string',
-            
-            // Shipping addresses (for buyers)
-            'shipping_addresses' => 'sometimes|array',
-            'shipping_addresses.*.address_label' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_address' => 'required|string',
-            'shipping_addresses.*.shipping_city' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_state' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_pincode' => 'required|string|max:10',
-            'shipping_addresses.*.contact_person' => 'nullable|string|max:255',
-            'shipping_addresses.*.contact_phone' => 'nullable|string|max:20',
-            'shipping_addresses.*.is_default' => 'boolean',
-            
-            // Seller assignments
-            'seller_ids' => 'sometimes|array',
-            'seller_ids.*' => 'integer|exists:sellers,id',
-            'primary_seller_id' => 'sometimes|integer|exists:sellers,id',
-            
-            // POC assignments
-            'poc_assignments' => 'sometimes|array',
-            'poc_assignments.*.poc_id' => 'required|integer|exists:pocs,id',
-            'poc_assignments.*.seller_id' => 'required|integer|exists:sellers,id',
-            'poc_assignments.*.is_primary' => 'boolean'
-        ]);
-    }
+   protected function validateStore(Request $request): array
+{
+    return $request->validate([
+        'company_name' => 'required|string|max:255',
+        'contact_person' => 'required|string|max:255',
+        'email' => 'required|email|unique:billing_companies,email',
+        'phone' => 'required|string|max:20',
+        'billing_address' => 'required|string',
+        'billing_city' => 'required|string|max:255',
+        'billing_state' => 'required|string|max:255',
+        'billing_pincode' => 'required|string|max:10',
+        'gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
+        'pan' => 'nullable|string|size:10|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/',
+        'type' => 'required|in:seller,buyer,both',
+        'status' => 'boolean',
+        'remarks' => 'nullable|string',
+        
+        // Shipping addresses (for buyers)
+        'shipping_addresses' => 'sometimes|array',
+        'shipping_addresses.*.address_label' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_address' => 'required|string',
+        'shipping_addresses.*.shipping_city' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_state' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_pincode' => 'required|string|max:10',
+        'shipping_addresses.*.contact_person' => 'nullable|string|max:255',
+        'shipping_addresses.*.contact_phone' => 'nullable|string|max:20',
+        'shipping_addresses.*.is_default' => 'boolean',
+        
+        // Dispatch addresses (for sellers)
+        'dispatch_addresses' => 'sometimes|array',
+        'dispatch_addresses.*.address_label' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_address' => 'required|string',
+        'dispatch_addresses.*.dispatch_city' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_state' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_pincode' => 'required|string|max:10',
+        'dispatch_addresses.*.contact_person' => 'nullable|string|max:255',
+        'dispatch_addresses.*.contact_phone' => 'nullable|string|max:20',
+        'dispatch_addresses.*.is_default' => 'boolean',
+        
+        // Seller assignments
+        'seller_ids' => 'sometimes|array',
+        'seller_ids.*' => 'integer|exists:sellers,id',
+        'primary_seller_id' => 'sometimes|integer|exists:sellers,id',
+        
+        // POC assignments
+        'poc_assignments' => 'sometimes|array',
+        'poc_assignments.*.poc_id' => 'required|integer|exists:pocs,id',
+        'poc_assignments.*.seller_id' => 'required|integer|exists:sellers,id',
+        'poc_assignments.*.is_primary' => 'boolean'
+    ]);
+}
 
-    protected function validateUpdate(Request $request, int $id): array
-    {
-        return $request->validate([
-            'company_name' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'email' => 'required|email|unique:billing_companies,email,' . $id,
-            'phone' => 'required|string|max:20',
-            'billing_address' => 'required|string',
-            'billing_city' => 'required|string|max:255',
-            'billing_state' => 'required|string|max:255',
-            'billing_pincode' => 'required|string|max:10',
-            'gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
-            'pan' => 'nullable|string|size:10|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/',
-            'type' => 'required|in:seller,buyer,both',
-            'status' => 'boolean',
-            'remarks' => 'nullable|string',
-            
-            // Similar validation rules for shipping addresses, sellers, and POCs
-            'shipping_addresses' => 'sometimes|array',
-            'shipping_addresses.*.address_label' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_address' => 'required|string',
-            'shipping_addresses.*.shipping_city' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_state' => 'required|string|max:255',
-            'shipping_addresses.*.shipping_pincode' => 'required|string|max:10',
-            'shipping_addresses.*.contact_person' => 'nullable|string|max:255',
-            'shipping_addresses.*.contact_phone' => 'nullable|string|max:20',
-            'shipping_addresses.*.is_default' => 'boolean',
-            
-            'seller_ids' => 'sometimes|array',
-            'seller_ids.*' => 'integer|exists:sellers,id',
-            'primary_seller_id' => 'sometimes|integer|exists:sellers,id',
-            
-            'poc_assignments' => 'sometimes|array',
-            'poc_assignments.*.poc_id' => 'required|integer|exists:pocs,id',
-            'poc_assignments.*.seller_id' => 'required|integer|exists:sellers,id',
-            'poc_assignments.*.is_primary' => 'boolean'
-        ]);
-    }
+protected function validateUpdate(Request $request, int $id): array
+{
+    return $request->validate([
+        'company_name' => 'required|string|max:255',
+        'contact_person' => 'required|string|max:255',
+        'email' => 'required|email|unique:billing_companies,email,' . $id,
+        'phone' => 'required|string|max:20',
+        'billing_address' => 'required|string',
+        'billing_city' => 'required|string|max:255',
+        'billing_state' => 'required|string|max:255',
+        'billing_pincode' => 'required|string|max:10',
+        'gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
+        'pan' => 'nullable|string|size:10|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/',
+        'type' => 'required|in:seller,buyer,both',
+        'status' => 'boolean',
+        'remarks' => 'nullable|string',
+        
+        // Similar validation rules for shipping addresses, sellers, and POCs
+        'shipping_addresses' => 'sometimes|array',
+        'shipping_addresses.*.address_label' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_address' => 'required|string',
+        'shipping_addresses.*.shipping_city' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_state' => 'required|string|max:255',
+        'shipping_addresses.*.shipping_pincode' => 'required|string|max:10',
+        'shipping_addresses.*.contact_person' => 'nullable|string|max:255',
+        'shipping_addresses.*.contact_phone' => 'nullable|string|max:20',
+        'shipping_addresses.*.is_default' => 'boolean',
+        
+        // Dispatch addresses (for sellers)
+        'dispatch_addresses' => 'sometimes|array',
+        'dispatch_addresses.*.address_label' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_address' => 'required|string',
+        'dispatch_addresses.*.dispatch_city' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_state' => 'required|string|max:255',
+        'dispatch_addresses.*.dispatch_pincode' => 'required|string|max:10',
+        'dispatch_addresses.*.contact_person' => 'nullable|string|max:255',
+        'dispatch_addresses.*.contact_phone' => 'nullable|string|max:20',
+        'dispatch_addresses.*.is_default' => 'boolean',
+        
+        'seller_ids' => 'sometimes|array',
+        'seller_ids.*' => 'integer|exists:sellers,id',
+        'primary_seller_id' => 'sometimes|integer|exists:sellers,id',
+        
+        'poc_assignments' => 'sometimes|array',
+        'poc_assignments.*.poc_id' => 'required|integer|exists:pocs,id',
+        'poc_assignments.*.seller_id' => 'required|integer|exists:sellers,id',
+        'poc_assignments.*.is_primary' => 'boolean'
+    ]);
+}
        
 
     public function show(int $id): View|JsonResponse

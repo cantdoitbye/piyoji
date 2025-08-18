@@ -24,119 +24,168 @@ class BillingCompanyService
         return $this->billingCompanyRepository->getWithFilters($filters);
     }
 
-    public function store(array $data)
-    {
-        try {
-            DB::beginTransaction();
+  // Add to BillingCompanyService.php
 
-            // Create billing company
-            $billingCompany = $this->billingCompanyRepository->create([
-                'company_name' => $data['company_name'],
-                'contact_person' => $data['contact_person'],
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'billing_address' => $data['billing_address'],
-                'billing_city' => $data['billing_city'],
-                'billing_state' => $data['billing_state'],
-                'billing_pincode' => $data['billing_pincode'],
-                'gstin' => $data['gstin'] ?? null,
-                'pan' => $data['pan'] ?? null,
-                'type' => $data['type'],
-                'status' => $data['status'] ?? true,
-                'remarks' => $data['remarks'] ?? null
-            ]);
+public function store(array $data)
+{
+    try {
+        DB::beginTransaction();
 
-            // Handle shipping addresses (for buyers)
-            if (($data['type'] === 'buyer' || $data['type'] === 'both') && isset($data['shipping_addresses'])) {
-                $this->handleShippingAddresses($billingCompany, $data['shipping_addresses']);
-            }
+        // Create billing company
+        $billingCompany = $this->billingCompanyRepository->create([
+            'company_name' => $data['company_name'],
+            'contact_person' => $data['contact_person'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'billing_address' => $data['billing_address'],
+            'billing_city' => $data['billing_city'],
+            'billing_state' => $data['billing_state'],
+            'billing_pincode' => $data['billing_pincode'],
+            'gstin' => $data['gstin'] ?? null,
+            'pan' => $data['pan'] ?? null,
+            'type' => $data['type'],
+            'status' => $data['status'] ?? true,
+            'remarks' => $data['remarks'] ?? null
+        ]);
 
-            // Handle seller assignments
-            if (isset($data['seller_ids']) && !empty($data['seller_ids'])) {
-                $this->handleSellerAssignments($billingCompany, $data['seller_ids'], $data['primary_seller_id'] ?? null);
-            }
-
-            // Handle POC assignments
-            if (isset($data['poc_assignments']) && !empty($data['poc_assignments'])) {
-                $this->handlePocAssignments($billingCompany, $data['poc_assignments']);
-            }
-
-            DB::commit();
-            Log::info('Billing company created successfully', ['billing_company_id' => $billingCompany->id]);
-
-            return $billingCompany;
-        } catch (Exception $e) {
-            DB::rollback();
-            Log::error('Error creating billing company: ' . $e->getMessage(), ['data' => $data]);
-            throw $e;
+        // Handle shipping addresses (for buyers)
+        if (($data['type'] === 'buyer' || $data['type'] === 'both') && isset($data['shipping_addresses'])) {
+            $this->handleShippingAddresses($billingCompany, $data['shipping_addresses']);
         }
+
+        // Handle dispatch addresses (for sellers)
+        if (($data['type'] === 'seller' || $data['type'] === 'both') && isset($data['dispatch_addresses'])) {
+            $this->handleDispatchAddresses($billingCompany, $data['dispatch_addresses']);
+        }
+
+        // Handle seller assignments
+        if (isset($data['seller_ids']) && !empty($data['seller_ids'])) {
+            $this->handleSellerAssignments($billingCompany, $data['seller_ids'], $data['primary_seller_id'] ?? null);
+        }
+
+        // Handle POC assignments
+        if (isset($data['poc_assignments']) && !empty($data['poc_assignments'])) {
+            $this->handlePocAssignments($billingCompany, $data['poc_assignments']);
+        }
+
+        DB::commit();
+        Log::info('Billing company created successfully', ['billing_company_id' => $billingCompany->id]);
+
+        return $billingCompany;
+    } catch (Exception $e) {
+        DB::rollback();
+        Log::error('Error creating billing company: ' . $e->getMessage(), ['data' => $data]);
+        throw $e;
     }
+}
 
     public function show(int $id)
     {
         return $this->billingCompanyRepository->find($id);
     }
 
-    public function update(int $id, array $data)
-    {
-        try {
-            DB::beginTransaction();
+   public function update(int $id, array $data)
+{
+    try {
+        DB::beginTransaction();
 
-            $billingCompany = $this->billingCompanyRepository->find($id);
-            if (!$billingCompany) {
-                throw new Exception('Billing company not found.');
-            }
-
-            // Update billing company
-            $billingCompany = $this->billingCompanyRepository->update($id, [
-                'company_name' => $data['company_name'],
-                'contact_person' => $data['contact_person'],
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'billing_address' => $data['billing_address'],
-                'billing_city' => $data['billing_city'],
-                'billing_state' => $data['billing_state'],
-                'billing_pincode' => $data['billing_pincode'],
-                'gstin' => $data['gstin'] ?? null,
-                'pan' => $data['pan'] ?? null,
-                'type' => $data['type'],
-                'status' => $data['status'] ?? true,
-                'remarks' => $data['remarks'] ?? null
-            ]);
-
-            // Handle shipping addresses
-            if (($data['type'] === 'buyer' || $data['type'] === 'both') && isset($data['shipping_addresses'])) {
-                // Delete existing shipping addresses and recreate
-                $billingCompany->shippingAddresses()->delete();
-                $this->handleShippingAddresses($billingCompany, $data['shipping_addresses']);
-            }
-
-            // Handle seller assignments
-            if (isset($data['seller_ids'])) {
-                $billingCompany->sellers()->detach();
-                if (!empty($data['seller_ids'])) {
-                    $this->handleSellerAssignments($billingCompany, $data['seller_ids'], $data['primary_seller_id'] ?? null);
-                }
-            }
-
-            // Handle POC assignments
-            if (isset($data['poc_assignments'])) {
-                $billingCompany->pocAssignments()->delete();
-                if (!empty($data['poc_assignments'])) {
-                    $this->handlePocAssignments($billingCompany, $data['poc_assignments']);
-                }
-            }
-
-            DB::commit();
-            Log::info('Billing company updated successfully', ['billing_company_id' => $id]);
-
-            return $billingCompany;
-        } catch (Exception $e) {
-            DB::rollback();
-            Log::error('Error updating billing company: ' . $e->getMessage(), ['billing_company_id' => $id, 'data' => $data]);
-            throw $e;
+        $billingCompany = $this->billingCompanyRepository->find($id);
+        if (!$billingCompany) {
+            throw new Exception('Billing company not found.');
         }
+
+        // Update billing company
+        $billingCompany = $this->billingCompanyRepository->update($id, [
+            'company_name' => $data['company_name'],
+            'contact_person' => $data['contact_person'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'billing_address' => $data['billing_address'],
+            'billing_city' => $data['billing_city'],
+            'billing_state' => $data['billing_state'],
+            'billing_pincode' => $data['billing_pincode'],
+            'gstin' => $data['gstin'] ?? null,
+            'pan' => $data['pan'] ?? null,
+            'type' => $data['type'],
+            'status' => $data['status'] ?? true,
+            'remarks' => $data['remarks'] ?? null
+        ]);
+
+        // Handle shipping addresses
+        if (($data['type'] === 'buyer' || $data['type'] === 'both') && isset($data['shipping_addresses'])) {
+            // Delete existing shipping addresses and recreate
+            $billingCompany->shippingAddresses()->delete();
+            $this->handleShippingAddresses($billingCompany, $data['shipping_addresses']);
+        }
+
+        // Handle dispatch addresses
+        if (($data['type'] === 'seller' || $data['type'] === 'both') && isset($data['dispatch_addresses'])) {
+            // Delete existing dispatch addresses and recreate
+            $billingCompany->dispatchAddresses()->delete();
+            $this->handleDispatchAddresses($billingCompany, $data['dispatch_addresses']);
+        }
+
+        // Handle seller assignments
+        if (isset($data['seller_ids'])) {
+            $billingCompany->sellers()->detach();
+            if (!empty($data['seller_ids'])) {
+                $this->handleSellerAssignments($billingCompany, $data['seller_ids'], $data['primary_seller_id'] ?? null);
+            }
+        }
+
+        // Handle POC assignments
+        if (isset($data['poc_assignments'])) {
+            $billingCompany->pocAssignments()->delete();
+            if (!empty($data['poc_assignments'])) {
+                $this->handlePocAssignments($billingCompany, $data['poc_assignments']);
+            }
+        }
+
+        DB::commit();
+        Log::info('Billing company updated successfully', ['billing_company_id' => $id]);
+
+        return $billingCompany;
+    } catch (Exception $e) {
+        DB::rollback();
+        Log::error('Error updating billing company: ' . $e->getMessage(), ['billing_company_id' => $id, 'data' => $data]);
+        throw $e;
     }
+}
+
+
+private function handleDispatchAddresses(BillingCompany $billingCompany, array $addresses)
+{
+    $hasDefault = false;
+    
+    foreach ($addresses as $addressData) {
+        // Ensure only one default address
+        if ($addressData['is_default'] ?? false) {
+            if ($hasDefault) {
+                $addressData['is_default'] = false;
+            } else {
+                $hasDefault = true;
+            }
+        }
+
+        BillingCompanyDispatchAddress::create([
+            'billing_company_id' => $billingCompany->id,
+            'address_label' => $addressData['address_label'],
+            'dispatch_address' => $addressData['dispatch_address'],
+            'dispatch_city' => $addressData['dispatch_city'],
+            'dispatch_state' => $addressData['dispatch_state'],
+            'dispatch_pincode' => $addressData['dispatch_pincode'],
+            'contact_person' => $addressData['contact_person'] ?? null,
+            'contact_phone' => $addressData['contact_phone'] ?? null,
+            'is_default' => $addressData['is_default'] ?? false,
+            'status' => $addressData['status'] ?? true
+        ]);
+    }
+
+    // If no default address was set, make the first one default
+    if (!$hasDefault && count($addresses) > 0) {
+        $billingCompany->dispatchAddresses()->first()->update(['is_default' => true]);
+    }
+}
 
     public function destroy(int $id)
     {

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\BillingCompanyDispatchAddress;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class BillingCompany extends Model
 {
@@ -165,4 +168,24 @@ class BillingCompany extends Model
             '0' => 'Inactive'
         ];
     }
+
+    public function dispatchAddresses(): HasMany
+{
+    return $this->hasMany(BillingCompanyDispatchAddress::class);
+}
+
+public function canHaveDispatchAddresses(): bool
+{
+    return in_array($this->type, ['seller', 'both']);
+}
+
+public function getDispatchAddressesCount(): int
+{
+    return $this->dispatchAddresses()->count();
+}
+
+public function getDefaultDispatchAddress()
+{
+    return $this->dispatchAddresses()->where('is_default', true)->first();
+}
 }

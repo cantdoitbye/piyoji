@@ -16,11 +16,14 @@ class Sample extends Model
         'sample_name',
         'seller_id',
         'batch_id',
+        'weight_per_sample',
+                'number_of_samples',
         'sample_weight',
         'arrival_date',
         'received_by',
         'status',
         'remarks',
+                'batch_group_id',
         // Evaluation fields
         'aroma_score',
         'liquor_score',
@@ -37,7 +40,9 @@ class Sample extends Model
     protected $casts = [
         'arrival_date' => 'date',
         'evaluated_at' => 'datetime',
+                'number_of_samples' => 'integer',
         'sample_weight' => 'decimal:2',
+                'weight_per_sample' => 'decimal:2',
         'aroma_score' => 'decimal:1',
         'liquor_score' => 'decimal:1',
         'appearance_score' => 'decimal:1',
@@ -71,6 +76,14 @@ class Sample extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(Seller::class);
+    }
+
+      /**
+     * Get the batch group this sample belongs to
+     */
+    public function batchGroup(): BelongsTo
+    {
+        return $this->belongsTo(SampleBatch::class, 'batch_group_id');
     }
 
     /**
@@ -229,6 +242,13 @@ class Sample extends Model
                 $sample->sample_id = self::generateSampleId();
             }
         });
+
+          static::saving(function ($sample) {
+            // Calculate total weight if weight_per_sample and number_of_samples are set
+            if ($sample->weight_per_sample && $sample->number_of_samples) {
+                $sample->sample_weight = $sample->weight_per_sample * $sample->number_of_samples;
+            }
+        });
     }
 
     /**
@@ -282,6 +302,8 @@ public function buyerAssignments()
     return $this->hasMany(SampleBuyerAssignment::class);
 }
 
+
+
 /**
  * Get buyers assigned to this sample
  */
@@ -324,4 +346,47 @@ public function scopeAssignedToBuyers($query)
 {
     return $query->where('status', self::STATUS_ASSIGNED_TO_BUYERS);
 }
+
+ /**
+     * Check if sample is batched
+     */
+    public function isBatched(): bool
+    {
+        return !is_null($this->batch_group_id);
+    }
+
+    
+   /**
+     * Get batch status information
+     */
+    public function getBatchStatusAttribute(): string
+    {
+        if ($this->batch_group_id) {
+            return 'Batched (' . $this->batch_id . ')';
+        }
+        return 'Not Batched';
+    }
+
+    /**
+     * Get total sample quantity (number_of_samples for display)
+     */
+    public function getTotalQuantityAttribute(): int
+    {
+        return $this->number_of_samples ?? 1;
+    }
+
+     public function scopeUnbatched($query)
+    {
+        return $query->whereNull('batch_group_id');
+    }
+
+      public function scopeBatched($query)
+    {
+        return $query->whereNotNull('batch_group_id');
+    }
+
+      public function scopeForDate($query, $date)
+    {
+        return $query->whereDate('arrival_date', $date);
+    }
 }

@@ -226,7 +226,27 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('assignments/{assignmentId}/dispatch-status', [SampleController::class, 'updateDispatchStatus'])->name('update-dispatch-status');
         Route::delete('assignments/{assignmentId}', [SampleController::class, 'removeAssignment'])->name('remove-assignment');
    
+
     });
+
+    Route::prefix('batches')->name('batches.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\BatchController::class, 'index'])->name('index');
+    Route::get('{id}', [App\Http\Controllers\Admin\BatchController::class, 'show'])->name('show');
+    Route::delete('{id}', [App\Http\Controllers\Admin\BatchController::class, 'destroy'])->name('destroy');
+    
+    // Batch creation and management
+    Route::post('create-for-date', [App\Http\Controllers\Admin\BatchController::class, 'createBatchesForDate'])->name('create-for-date');
+    Route::post('rebuild-for-date', [App\Http\Controllers\Admin\BatchController::class, 'rebuildBatchesForDate'])->name('rebuild-for-date');
+    Route::get('date-statistics', [App\Http\Controllers\Admin\BatchController::class, 'getDateStatistics'])->name('date-statistics');
+    
+    // Batch status management
+    Route::patch('{id}/status', [App\Http\Controllers\Admin\BatchController::class, 'updateStatus'])->name('update-status');
+    
+    // Export and data
+    Route::get('export', [App\Http\Controllers\Admin\BatchController::class, 'export'])->name('export');
+    Route::get('overview-data', [App\Http\Controllers\Admin\BatchController::class, 'getOverviewData'])->name('overview-data');
+    Route::get('{id}/export-samples', [App\Http\Controllers\Admin\BatchController::class, 'exportBatchSamples'])->name('export-samples');
+});
 
      Route::resource('pocs', App\Http\Controllers\Admin\PocController::class);
     Route::patch('pocs/{id}/toggle-status', [App\Http\Controllers\Admin\PocController::class, 'toggleStatus'])->name('pocs.toggle-status');
@@ -300,6 +320,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('{id}/service-route', [TransporterBranchController::class, 'addServiceRoute'])->name('add-service-route');
         Route::delete('{branchId}/service-route/{routeId}', [TransporterBranchController::class, 'removeServiceRoute'])->name('remove-service-route');
     });
+
+
+    Route::prefix('sales-register')->name('sales-register.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\SalesRegisterController::class, 'index'])->name('index');
+    Route::get('create', [App\Http\Controllers\Admin\SalesRegisterController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\SalesRegisterController::class, 'store'])->name('store');
+    Route::get('{id}', [App\Http\Controllers\Admin\SalesRegisterController::class, 'show'])->name('show');
+    Route::get('{id}/edit', [App\Http\Controllers\Admin\SalesRegisterController::class, 'edit'])->name('edit');
+    Route::put('{id}', [App\Http\Controllers\Admin\SalesRegisterController::class, 'update'])->name('update');
+    Route::delete('{id}', [App\Http\Controllers\Admin\SalesRegisterController::class, 'destroy'])->name('destroy');
+    
+    // Status management
+    Route::post('{id}/approve', [App\Http\Controllers\Admin\SalesRegisterController::class, 'approve'])->name('approve');
+    Route::post('{id}/reject', [App\Http\Controllers\Admin\SalesRegisterController::class, 'reject'])->name('reject');
+    
+    // Reports and export
+    Route::get('report', [App\Http\Controllers\Admin\SalesRegisterController::class, 'report'])->name('report');
+    Route::get('export', [App\Http\Controllers\Admin\SalesRegisterController::class, 'export'])->name('export');
+});
     //   Route::get('tea-types-by-category', [TeaController::class, 'getTeaTypesByCategory'])
     //      ->name('tea-types-by-category');
     

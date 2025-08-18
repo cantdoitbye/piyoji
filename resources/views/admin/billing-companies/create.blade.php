@@ -55,7 +55,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="type" class="form-label">Company Type <span class="text-danger">*</span></label>
                             <select class="form-select @error('type') is-invalid @enderror" 
-                                    id="type" name="type" required onchange="toggleShippingAddresses()">
+                                    id="type" name="type" required onchange="toggleAddressSections()">
                                 <option value="">Select Type</option>
                                 @foreach($typeOptions as $key => $label)
                                     <option value="{{ $key }}" {{ old('type', $billingCompany->type ?? '') == $key ? 'selected' : '' }}>
@@ -219,6 +219,22 @@
                         </div>
                     </div>
 
+                    <!-- Dispatch Addresses (Only for Sellers) -->
+                    <div class="row mb-4" id="dispatch-addresses-section" style="display: none;">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-shipping-fast me-2"></i>Dispatch Addresses
+                                <button type="button" class="btn btn-sm btn-outline-primary float-end" onclick="addDispatchAddress()">
+                                    <i class="fas fa-plus me-1"></i>Add Address
+                                </button>
+                            </h6>
+                        </div>
+
+                        <div class="col-12" id="dispatch-addresses-container">
+                            <!-- Dispatch addresses will be added dynamically -->
+                        </div>
+                    </div>
+
                     <!-- POC Assignments -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -268,6 +284,7 @@
                         <li>Each billing company has details like GST Number, PAN</li>
                         <li>Type field determines functionality: Seller, Buyer, or Both</li>
                         <li>If type is Buyer, multiple shipping addresses can be added</li>
+                        <li>If type is Seller, multiple dispatch addresses can be added</li>
                         <li>POC can be assigned to billing company under specific seller</li>
                         <li>Same POC cannot be assigned to another seller</li>
                     </ul>
@@ -284,6 +301,9 @@
                         @if($billingCompany->canHaveShippingAddresses())
                             <li><strong>Shipping Addresses:</strong> {{ $billingCompany->getShippingAddressesCount() }}</li>
                         @endif
+                        @if($billingCompany->canHaveDispatchAddresses())
+                            <li><strong>Dispatch Addresses:</strong> {{ $billingCompany->getDispatchAddressesCount() }}</li>
+                        @endif
                     </ul>
                 </div>
                 @endif
@@ -291,13 +311,13 @@
                 <div class="alert alert-warning">
                     <h6><i class="fas fa-exclamation-triangle me-2"></i>Company Types:</h6>
                     <p class="mb-2 small">
-                        <strong>Seller:</strong> Companies that supply tea products.
+                        <strong>Seller:</strong> Companies that supply tea products. Can have multiple dispatch addresses.
                     </p>
                     <p class="mb-2 small">
                         <strong>Buyer:</strong> Companies that purchase tea products. Can have multiple shipping addresses.
                     </p>
                     <p class="mb-0 small">
-                        <strong>Both:</strong> Companies that both buy and sell tea products.
+                        <strong>Both:</strong> Companies that both buy and sell tea products. Can have both shipping and dispatch addresses.
                     </p>
                 </div>
             </div>
@@ -310,7 +330,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <style>
-.shipping-address-item, .poc-assignment-item {
+.shipping-address-item, .dispatch-address-item, .poc-assignment-item {
     border: 1px solid #dee2e6;
     border-radius: 0.375rem;
     padding: 1rem;
@@ -335,12 +355,13 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 let shippingAddressIndex = 0;
+let dispatchAddressIndex = 0;
 let pocAssignmentIndex = 0;
 
 $(document).ready(function() {
     // Initialize existing data if editing
     @if(isset($billingCompany))
-        toggleShippingAddresses();
+        toggleAddressSections();
         
         // Load existing shipping addresses
         @if($billingCompany->shippingAddresses)
@@ -351,6 +372,22 @@ $(document).ready(function() {
                     shipping_city: '{{ $address->shipping_city }}',
                     shipping_state: '{{ $address->shipping_state }}',
                     shipping_pincode: '{{ $address->shipping_pincode }}',
+                    contact_person: '{{ $address->contact_person }}',
+                    contact_phone: '{{ $address->contact_phone }}',
+                    is_default: {{ $address->is_default ? 'true' : 'false' }}
+                });
+            @endforeach
+        @endif
+
+        // Load existing dispatch addresses
+        @if($billingCompany->dispatchAddresses)
+            @foreach($billingCompany->dispatchAddresses as $address)
+                addDispatchAddress({
+                    address_label: '{{ $address->address_label }}',
+                    dispatch_address: '{{ $address->dispatch_address }}',
+                    dispatch_city: '{{ $address->dispatch_city }}',
+                    dispatch_state: '{{ $address->dispatch_state }}',
+                    dispatch_pincode: '{{ $address->dispatch_pincode }}',
                     contact_person: '{{ $address->contact_person }}',
                     contact_phone: '{{ $address->contact_phone }}',
                     is_default: {{ $address->is_default ? 'true' : 'false' }}
@@ -369,7 +406,7 @@ $(document).ready(function() {
             @endforeach
         @endif
     @else
-        toggleShippingAddresses();
+        toggleAddressSections();
     @endif
 
     // Format GSTIN and PAN inputs
@@ -382,14 +419,23 @@ $(document).ready(function() {
     });
 });
 
-function toggleShippingAddresses() {
+function toggleAddressSections() {
     const type = document.getElementById('type').value;
-    const section = document.getElementById('shipping-addresses-section');
+    const shippingSection = document.getElementById('shipping-addresses-section');
+    const dispatchSection = document.getElementById('dispatch-addresses-section');
     
+    // Show/hide shipping addresses for buyers
     if (type === 'buyer' || type === 'both') {
-        section.style.display = 'block';
+        shippingSection.style.display = 'block';
     } else {
-        section.style.display = 'none';
+        shippingSection.style.display = 'none';
+    }
+    
+    // Show/hide dispatch addresses for sellers
+    if (type === 'seller' || type === 'both') {
+        dispatchSection.style.display = 'block';
+    } else {
+        dispatchSection.style.display = 'none';
     }
 }
 
@@ -449,8 +495,8 @@ function addShippingAddress(data = {}) {
                 <div class="col-md-6 mb-3">
                     <div class="form-check mt-4">
                         <input class="form-check-input" type="checkbox" name="shipping_addresses[${index}][is_default]" 
-                               id="is_default_${index}" value="1" ${data.is_default ? 'checked' : ''}>
-                        <label class="form-check-label" for="is_default_${index}">
+                               id="shipping_is_default_${index}" value="1" ${data.is_default ? 'checked' : ''}>
+                        <label class="form-check-label" for="shipping_is_default_${index}">
                             Default Address
                         </label>
                     </div>
@@ -464,6 +510,79 @@ function addShippingAddress(data = {}) {
 
 function removeShippingAddress(index) {
     document.getElementById(`shipping-address-${index}`).remove();
+}
+
+function addDispatchAddress(data = {}) {
+    const container = document.getElementById('dispatch-addresses-container');
+    const index = dispatchAddressIndex++;
+    
+    const html = `
+        <div class="dispatch-address-item" id="dispatch-address-${index}">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn" onclick="removeDispatchAddress(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Address Label <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][address_label]" 
+                           value="${data.address_label || ''}" placeholder="e.g., Main Dispatch Center" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Contact Person</label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][contact_person]" 
+                           value="${data.contact_person || ''}">
+                </div>
+                
+                <div class="col-12 mb-3">
+                    <label class="form-label">Dispatch Address <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="dispatch_addresses[${index}][dispatch_address]" 
+                              rows="2" required>${data.dispatch_address || ''}</textarea>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">City <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][dispatch_city]" 
+                           value="${data.dispatch_city || ''}" required>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">State <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][dispatch_state]" 
+                           value="${data.dispatch_state || ''}" required>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][dispatch_pincode]" 
+                           value="${data.dispatch_pincode || ''}" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Contact Phone</label>
+                    <input type="text" class="form-control" name="dispatch_addresses[${index}][contact_phone]" 
+                           value="${data.contact_phone || ''}">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="dispatch_addresses[${index}][is_default]" 
+                               id="dispatch_is_default_${index}" value="1" ${data.is_default ? 'checked' : ''}>
+                        <label class="form-check-label" for="dispatch_is_default_${index}">
+                            Default Address
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeDispatchAddress(index) {
+    document.getElementById(`dispatch-address-${index}`).remove();
 }
 
 function addPocAssignment(data = {}) {
