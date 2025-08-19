@@ -226,7 +226,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('assignments/{assignmentId}/dispatch-status', [SampleController::class, 'updateDispatchStatus'])->name('update-dispatch-status');
         Route::delete('assignments/{assignmentId}', [SampleController::class, 'removeAssignment'])->name('remove-assignment');
    
+Route::get('{id}/transfer', [SampleController::class, 'showTransferForm'])->name('transfer-form');
+Route::post('{id}/transfer', [SampleController::class, 'transferToBatch'])->name('transfer-to-batch');
+Route::get('{id}/transfer-history', [SampleController::class, 'transferHistory'])->name('transfer-history');
 
+// All transfers listing
+Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers');
     });
 
     Route::prefix('batches')->name('batches.')->group(function () {

@@ -20,6 +20,20 @@
             <a href="{{ route('admin.samples.edit', $sample->id) }}" class="btn btn-outline-primary">
                 <i class="fas fa-edit me-1"></i> Edit
             </a>
+
+            <!-- Add this to your samples show.blade.php page in the header actions section -->
+
+@if($sample->batch_group_id && $sample->evaluation_status === 'completed' && $sample->sample_weight > 0.01 && $sample->number_of_samples > 1)
+    <a href="{{ route('admin.samples.transfer-form', $sample->id) }}" class="btn btn-warning">
+        <i class="fas fa-exchange-alt me-1"></i> Transfer to Another Batch
+    </a>
+@endif
+
+@if($sample->batch_group_id)
+    <a href="{{ route('admin.samples.transfer-history', $sample->id) }}" class="btn btn-outline-info">
+        <i class="fas fa-history me-1"></i> Transfer History
+    </a>
+@endif
             
             <a href="{{ route('admin.samples.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Back to Samples

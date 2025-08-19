@@ -347,6 +347,24 @@
         </span>
     @endif
 @endif
+
+<!-- Add this to your samples index.blade.php in the actions column for each sample row -->
+
+@if($sample->canBeTransferred())
+    <a href="{{ route('admin.samples.transfer-form', $sample->id) }}" 
+       class="btn btn-sm btn-warning" 
+       title="Transfer to Another Batch">
+        <i class="fas fa-exchange-alt"></i>
+    </a>
+@endif
+
+@if($sample->hasTransfers())
+    <a href="{{ route('admin.samples.transfer-history', $sample->id) }}" 
+       class="btn btn-sm btn-outline-info" 
+       title="View Transfer History">
+        <i class="fas fa-history"></i>
+    </a>
+@endif
                                     </div>
                                 </td>
                             </tr>

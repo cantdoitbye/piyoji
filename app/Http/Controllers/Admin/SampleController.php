@@ -9,6 +9,7 @@ use App\Services\SellerService;
 use App\Services\BatchService;
 use App\Models\Sample;
 use App\Services\SalesRegisterService;
+use App\Services\SampleTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -486,5 +487,102 @@ public function addToSalesRegister(int $id, Request $request)
         return redirect()->back()
             ->with('error', 'Error adding to Sales Register: ' . $e->getMessage());
     }
+}
+
+public function showTransferForm(int $id)
+{
+    try {
+        $sample = $this->sampleService->getSampleById($id);
+        
+        if (!$sample) {
+            return redirect()->route('admin.samples.index')
+                ->with('error', 'Sample not found');
+        }
+
+        // Check if sample can be transferred
+        if (!$sample->batch_group_id) {
+            return redirect()->back()
+                ->with('error', 'Sample must be batched before it can be transferred');
+        }
+
+        if ($sample->evaluation_status !== 'completed') {
+            return redirect()->back()
+                ->with('error', 'Only evaluated samples can be transferred for retesting');
+        }
+
+        return view('admin.samples.transfer', compact('sample'));
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error loading transfer form: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Process sample transfer to another batch
+ */
+public function transferToBatch(int $id, Request $request, SampleTransferService $transferService)
+{
+    try {
+        // Validate the request
+        $request->validate([
+            'transferred_weight' => 'required|numeric|min:0.01',
+            'transferred_quantity' => 'required|integer|min:1',
+            'transfer_reason' => 'required|in:retesting,quality_check,additional_evaluation,other',
+            'transfer_remarks' => 'nullable|string|max:1000'
+        ]);
+
+        $transferData = $request->only([
+            'transferred_weight',
+            'transferred_quantity', 
+            'transfer_reason',
+            'transfer_remarks'
+        ]);
+
+        $result = $transferService->transferSampleToBatch($id, $transferData);
+
+        return redirect()->route('admin.samples.show', $id)
+            ->with('success', $result['message'] . ' New Sample ID: ' . $result['new_sample']->sample_id);
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->withErrors(['error' => $e->getMessage()])
+            ->withInput();
+    }
+}
+
+/**
+ * Show sample transfer history
+ */
+public function transferHistory(int $id, SampleTransferService $transferService)
+{
+    try {
+        $history = $transferService->getSampleTransferHistory($id);
+        
+        return view('admin.samples.transfer-history', compact('history'));
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error loading transfer history: ' . $e->getMessage());
+    }
+}
+
+/**
+ * List all sample transfers
+ */
+public function transfers(Request $request, SampleTransferService $transferService)
+{
+    $filters = [
+        'status' => $request->get('status'),
+        'transfer_reason' => $request->get('transfer_reason'),
+        'start_date' => $request->get('start_date'),
+        'end_date' => $request->get('end_date'),
+        'search' => $request->get('search'),
+        'per_page' => $request->get('per_page', 15)
+    ];
+
+    $transfers = $transferService->getAllTransfers($filters);
+
+    return view('admin.samples.transfers', compact('transfers', 'filters'));
 }
 }

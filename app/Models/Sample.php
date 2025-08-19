@@ -389,4 +389,72 @@ public function scopeAssignedToBuyers($query)
     {
         return $query->whereDate('arrival_date', $date);
     }
+
+/**
+ * Get transfers FROM this sample (when this sample was the source)
+ */
+public function transfersFrom()
+{
+    return $this->hasMany(SampleTransfer::class, 'original_sample_id');
+}
+
+/**
+ * Get transfers TO this sample (when this sample was created from transfer)
+ */
+public function transfersTo()
+{
+    return $this->hasMany(SampleTransfer::class, 'new_sample_id');
+}
+
+/**
+ * Check if this sample has been transferred
+ */
+public function hasTransfers(): bool
+{
+    return $this->transfersFrom()->exists() || $this->transfersTo()->exists();
+}
+
+/**
+ * Check if this sample was created from a transfer
+ */
+public function isFromTransfer(): bool
+{
+    return $this->transfersTo()->exists();
+}
+
+/**
+ * Get the original sample if this was created from transfer
+ */
+public function getOriginalSampleAttribute()
+{
+    $transfer = $this->transfersTo()->first();
+    return $transfer ? $transfer->originalSample : null;
+}
+
+/**
+ * Check if sample can be transferred
+ */
+public function canBeTransferred(): bool
+{
+    return $this->batch_group_id && 
+           $this->evaluation_status === self::EVALUATION_COMPLETED &&
+           $this->sample_weight > 0.01 &&
+           $this->number_of_samples > 1;
+}
+
+/**
+ * Get total transferred weight from this sample
+ */
+public function getTotalTransferredWeightAttribute(): float
+{
+    return $this->transfersFrom()->sum('transferred_weight');
+}
+
+/**
+ * Get total transferred quantity from this sample
+ */
+public function getTotalTransferredQuantityAttribute(): int
+{
+    return $this->transfersFrom()->sum('transferred_quantity');
+}
 }
