@@ -23,15 +23,47 @@ class Garden extends Model
         'category_filters',
         'poc_ids',
         'status',
-        'remarks'
+        'remarks',
+'acceptable_invoice_types',
+
     ];
 
     protected $casts = [
         'tea_ids' => 'array',
         'category_filters' => 'array',
         'poc_ids' => 'array',
-        'status' => 'boolean'
+        'status' => 'boolean',
+'acceptable_invoice_types' => 'array',
+
     ];
+
+
+
+
+
+   public static function getInvoiceTypesOptions()
+{
+    return [
+        'UK' => 'UK (Brokens, Fannings)',
+        'C' => 'C (Brokens, Fannings)', 
+        'D' => 'D (Dust)'
+    ];
+}
+
+// Add this accessor for text display
+public function getAcceptableInvoiceTypesTextAttribute()
+{
+    if (!$this->acceptable_invoice_types) {
+        return 'Not specified';
+    }
+    
+    $options = self::getInvoiceTypesOptions();
+    $selected = array_map(function($type) use ($options) {
+        return $options[$type] ?? $type;
+    }, $this->acceptable_invoice_types);
+    
+    return implode(', ', $selected);
+}
 
     // Relationships
     public function teas()

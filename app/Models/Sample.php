@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class Sample extends Model
 {
@@ -31,6 +32,11 @@ class Sample extends Model
         'overall_score',
         'evaluation_comments',
         'evaluation_status',
+           'catalog_weight',
+    'allocated_weight',
+    'available_weight',
+    'allocation_count',
+    'has_sufficient_weight',
         'evaluated_by',
         'evaluated_at',
         'created_by',
@@ -46,7 +52,12 @@ class Sample extends Model
         'aroma_score' => 'decimal:1',
         'liquor_score' => 'decimal:1',
         'appearance_score' => 'decimal:1',
-        'overall_score' => 'decimal:1'
+        'overall_score' => 'decimal:1',
+         'catalog_weight' => 'decimal:2',
+    'allocated_weight' => 'decimal:2',
+    'available_weight' => 'decimal:2',
+    'allocation_count' => 'integer',
+    'has_sufficient_weight' => 'boolean'
     ];
 
     protected $dates = [
@@ -69,6 +80,8 @@ class Sample extends Model
     const EVALUATION_PENDING = 'pending';
     const EVALUATION_IN_PROGRESS = 'in_progress';
     const EVALUATION_COMPLETED = 'completed';
+    const FIXED_ALLOCATION_WEIGHT = 0.01; 
+
 
     /**
      * Get the seller that owns the sample.
@@ -249,6 +262,22 @@ class Sample extends Model
                 $sample->sample_weight = $sample->weight_per_sample * $sample->number_of_samples;
             }
         });
+
+         static::creating(function ($sample) {
+        $sample->catalog_weight = $sample->sample_weight;
+        $sample->available_weight = $sample->sample_weight;
+        $sample->allocated_weight = 0;
+        $sample->allocation_count = 0;
+        $sample->has_sufficient_weight = $sample->sample_weight >= self::FIXED_ALLOCATION_WEIGHT;
+    });
+
+    static::updating(function ($sample) {
+        if ($sample->isDirty('sample_weight')) {
+            $sample->catalog_weight = $sample->sample_weight;
+            $sample->available_weight = $sample->sample_weight - $sample->allocated_weight;
+            $sample->has_sufficient_weight = $sample->available_weight >= self::FIXED_ALLOCATION_WEIGHT;
+        }
+    });
     }
 
     /**
@@ -434,13 +463,13 @@ public function getOriginalSampleAttribute()
 /**
  * Check if sample can be transferred
  */
-public function canBeTransferred(): bool
-{
-    return $this->batch_group_id && 
-           $this->evaluation_status === self::EVALUATION_COMPLETED &&
-           $this->sample_weight > 0.01 &&
-           $this->number_of_samples > 1;
-}
+// public function canBeTransferred(): bool
+// {
+//     return $this->batch_group_id && 
+//            $this->evaluation_status === self::EVALUATION_COMPLETED &&
+//            $this->sample_weight > 0.01 &&
+//            $this->number_of_samples > 1;
+// }
 
 /**
  * Get total transferred weight from this sample
@@ -456,5 +485,203 @@ public function getTotalTransferredWeightAttribute(): float
 public function getTotalTransferredQuantityAttribute(): int
 {
     return $this->transfersFrom()->sum('transferred_quantity');
+}
+
+
+
+
+/**
+ * Get all allocations for this sample
+ */
+public function allocations()
+{
+    return $this->hasMany(SampleAllocation::class);
+}
+
+/**
+ * Get active allocations for this sample
+ */
+public function activeAllocations()
+{
+    return $this->hasMany(SampleAllocation::class)->active();
+}
+
+/**
+ * Check if sample has sufficient weight for allocation
+ */
+public function hasSufficientWeightForAllocation(): bool
+{
+    return $this->available_weight >= self::FIXED_ALLOCATION_WEIGHT;
+}
+
+/**
+ * Allocate 10gm for batch testing
+ */
+public function allocateForBatchTesting($batchGroupId, $batchId, $userId): SampleAllocation
+{
+    if (!$this->hasSufficientWeightForAllocation()) {
+        throw new \Exception('Insufficient weight available for allocation. Available: ' . $this->available_weight . 'kg');
+    }
+
+    DB::beginTransaction();
+    try {
+        // Create allocation record
+        $allocation = SampleAllocation::create([
+            'sample_id' => $this->id,
+            'batch_group_id' => $batchGroupId,
+            'batch_id' => $batchId,
+            'allocated_weight' => self::FIXED_ALLOCATION_WEIGHT,
+            'allocation_type' => SampleAllocation::TYPE_BATCH_TESTING,
+            'allocation_reason' => 'Allocated for batch testing',
+            'allocation_date' => now(),
+            'allocated_by' => $userId,
+            'status' => SampleAllocation::STATUS_ALLOCATED
+        ]);
+
+        // Update sample allocation tracking
+        $this->increment('allocation_count');
+        $this->increment('allocated_weight', self::FIXED_ALLOCATION_WEIGHT);
+        $this->decrement('available_weight', self::FIXED_ALLOCATION_WEIGHT);
+        $this->update([
+            'has_sufficient_weight' => $this->available_weight >= self::FIXED_ALLOCATION_WEIGHT
+        ]);
+
+        DB::commit();
+        return $allocation;
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Allocate 10gm for retesting
+ */
+public function allocateForRetesting($transferReason, $userId): SampleAllocation
+{
+    if (!$this->hasSufficientWeightForAllocation()) {
+        throw new \Exception('Insufficient weight available for retesting allocation. Available: ' . $this->available_weight . 'kg');
+    }
+
+    DB::beginTransaction();
+    try {
+        // Create allocation record
+        $allocation = SampleAllocation::create([
+            'sample_id' => $this->id,
+            'batch_group_id' => null, // Will be set when new sample is batched
+            'batch_id' => null, // Will be set when new sample is batched
+            'allocated_weight' => self::FIXED_ALLOCATION_WEIGHT,
+            'allocation_type' => SampleAllocation::TYPE_RETESTING,
+            'allocation_reason' => 'Allocated for ' . $transferReason,
+            'allocation_date' => now(),
+            'allocated_by' => $userId,
+            'status' => SampleAllocation::STATUS_ALLOCATED
+        ]);
+
+        // Update sample allocation tracking
+        $this->increment('allocation_count');
+        $this->increment('allocated_weight', self::FIXED_ALLOCATION_WEIGHT);
+        $this->decrement('available_weight', self::FIXED_ALLOCATION_WEIGHT);
+        $this->update([
+            'has_sufficient_weight' => $this->available_weight >= self::FIXED_ALLOCATION_WEIGHT
+        ]);
+
+        DB::commit();
+        return $allocation;
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Return allocated weight (if unused)
+ */
+public function returnAllocation(SampleAllocation $allocation): bool
+{
+    if ($allocation->sample_id !== $this->id) {
+        throw new \Exception('Allocation does not belong to this sample');
+    }
+
+    if ($allocation->status !== SampleAllocation::STATUS_ALLOCATED) {
+        throw new \Exception('Can only return allocated weight that has not been used');
+    }
+
+    DB::beginTransaction();
+    try {
+        // Update allocation status
+        $allocation->update([
+            'status' => SampleAllocation::STATUS_RETURNED,
+            'remarks' => ($allocation->remarks ? $allocation->remarks . '. ' : '') . 'Returned on ' . now()->format('Y-m-d H:i')
+        ]);
+
+        // Update sample allocation tracking
+        $this->decrement('allocation_count');
+        $this->decrement('allocated_weight', $allocation->allocated_weight);
+        $this->increment('available_weight', $allocation->allocated_weight);
+        $this->update([
+            'has_sufficient_weight' => $this->available_weight >= self::FIXED_ALLOCATION_WEIGHT
+        ]);
+
+        DB::commit();
+        return true;
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Mark allocation as used
+ */
+public function markAllocationAsUsed(SampleAllocation $allocation): bool
+{
+    if ($allocation->sample_id !== $this->id) {
+        throw new \Exception('Allocation does not belong to this sample');
+    }
+
+    $allocation->update([
+        'status' => SampleAllocation::STATUS_USED,
+        'remarks' => ($allocation->remarks ? $allocation->remarks . '. ' : '') . 'Used on ' . now()->format('Y-m-d H:i')
+    ]);
+
+    return true;
+}
+
+/**
+ * Check if sample can be transferred (has sufficient weight)
+ */
+public function canBeTransferred(): bool
+{
+    return $this->batch_group_id && 
+           $this->evaluation_status === self::EVALUATION_COMPLETED &&
+           $this->hasSufficientWeightForAllocation();
+}
+
+/**
+ * Get total weight in catalog
+ */
+public function getCatalogWeightAttribute(): float
+{
+    return $this->attributes['catalog_weight'] ?? $this->sample_weight;
+}
+
+/**
+ * Get allocation status summary
+ */
+public function getAllocationStatusAttribute(): string
+{
+    if (!$this->has_sufficient_weight) {
+        return 'Insufficient Weight';
+    }
+    
+    if ($this->allocation_count === 0) {
+        return 'Available for Allocation';
+    }
+    
+    return $this->allocation_count . ' allocation(s) made';
 }
 }

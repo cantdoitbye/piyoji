@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Sample;
 use App\Models\SampleTransfer;
 use App\Models\SampleBatch;
+use App\Models\SampleAllocation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -12,7 +13,7 @@ use Carbon\Carbon;
 class SampleTransferService
 {
     /**
-     * Transfer sample to another batch for retesting
+     * Transfer sample to another batch for retesting (Old method - keep for backward compatibility)
      */
     public function transferSampleToBatch(int $sampleId, array $transferData): array
     {
@@ -70,7 +71,65 @@ class SampleTransferService
     }
 
     /**
-     * Validate transfer data
+     * Transfer sample for retesting with fixed 10gm allocation (NEW METHOD)
+     */
+    public function transferSampleForRetesting(int $sampleId, array $transferData): array
+    {
+        try {
+            DB::beginTransaction();
+
+            $originalSample = Sample::with(['batchGroup', 'seller'])->findOrFail($sampleId);
+
+            // Validate retesting transfer eligibility
+            $this->validateRetestingTransfer($originalSample, $transferData);
+
+            // Allocate 10gm from original sample for retesting
+            $allocation = $originalSample->allocateForRetesting($transferData['transfer_reason'], Auth::id());
+
+            // Create new sample for retesting (with fixed 10gm)
+            $newSample = $this->createRetestingSample($originalSample, $transferData, $allocation);
+
+            // Create transfer record
+            $transfer = SampleTransfer::create([
+                'original_sample_id' => $originalSample->id,
+                'new_sample_id' => $newSample->id,
+                'from_batch_group_id' => $originalSample->batch_group_id,
+                'to_batch_group_id' => null, // Will be set when new sample is batched
+                'from_batch_id' => $originalSample->batch_id,
+                'to_batch_id' => null, // Will be set when new sample is batched
+                'transferred_weight' => Sample::FIXED_ALLOCATION_WEIGHT, // Always 10gm
+                'transferred_quantity' => 1, // Always 1 unit for testing
+                'remaining_weight' => $originalSample->available_weight,
+                'remaining_quantity' => $originalSample->number_of_samples, // Original quantity unchanged
+                'transfer_reason' => $transferData['transfer_reason'],
+                'transfer_remarks' => $transferData['transfer_remarks'] ?? 'Fixed 10gm allocation for retesting',
+                'status' => SampleTransfer::STATUS_COMPLETED,
+                'transfer_date' => now(),
+                'transferred_by' => Auth::id()
+            ]);
+
+            // Link allocation to transfer
+            $allocation->update(['remarks' => 'Transfer ID: ' . $transfer->id]);
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Sample successfully allocated for retesting (10gm transferred)',
+                'original_sample' => $originalSample->fresh(),
+                'new_sample' => $newSample,
+                'transfer' => $transfer,
+                'allocation' => $allocation
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Validate transfer data (Old method)
      */
     private function validateTransferData(Sample $sample, array $data): void
     {
@@ -101,7 +160,28 @@ class SampleTransferService
     }
 
     /**
-     * Create new sample for transferred portion
+     * Validate retesting transfer eligibility (NEW METHOD)
+     */
+    private function validateRetestingTransfer(Sample $sample, array $data): void
+    {
+        // Check if sample is batched
+        if (!$sample->batch_group_id) {
+            throw new \Exception('Sample must be batched before it can be transferred for retesting');
+        }
+
+        // Check if sample has been evaluated
+        if ($sample->evaluation_status !== Sample::EVALUATION_COMPLETED) {
+            throw new \Exception('Only evaluated samples can be transferred for retesting');
+        }
+
+        // Check if sample has sufficient weight for 10gm allocation
+        if (!$sample->hasSufficientWeightForAllocation()) {
+            throw new \Exception('Insufficient weight available for retesting. Available: ' . $sample->available_weight . 'kg, Required: ' . Sample::FIXED_ALLOCATION_WEIGHT . 'kg');
+        }
+    }
+
+    /**
+     * Create new sample for transferred portion (Old method)
      */
     private function createTransferredSample(Sample $originalSample, array $transferData): Sample
     {
@@ -135,7 +215,41 @@ class SampleTransferService
     }
 
     /**
-     * Update original sample with remaining portion
+     * Create new sample for retesting (fixed 10gm) (NEW METHOD)
+     */
+    private function createRetestingSample(Sample $originalSample, array $transferData, SampleAllocation $allocation): Sample
+    {
+        // Generate new sample ID
+        $newSampleId = Sample::generateSampleId();
+
+        $newSample = Sample::create([
+            'sample_id' => $newSampleId,
+            'sample_name' => $originalSample->sample_name . ' (Retesting)',
+            'seller_id' => $originalSample->seller_id,
+            'batch_id' => null, // Will be assigned when batched
+            'batch_group_id' => null, // Will be assigned when batched
+            'number_of_samples' => 1, // Always 1 for retesting
+            'weight_per_sample' => Sample::FIXED_ALLOCATION_WEIGHT,
+            'sample_weight' => Sample::FIXED_ALLOCATION_WEIGHT, // Fixed 10gm
+            'catalog_weight' => Sample::FIXED_ALLOCATION_WEIGHT,
+            'available_weight' => Sample::FIXED_ALLOCATION_WEIGHT,
+            'allocated_weight' => 0,
+            'allocation_count' => 0,
+            'has_sufficient_weight' => true,
+            'arrival_date' => now()->format('Y-m-d'),
+            'received_by' => Auth::id(),
+            'status' => Sample::STATUS_RECEIVED,
+            'evaluation_status' => Sample::EVALUATION_PENDING,
+            'remarks' => 'Retesting sample from ' . $originalSample->sample_id . ' (10gm allocation) - Reason: ' . $transferData['transfer_reason'],
+            'created_by' => Auth::id(),
+            'updated_by' => Auth::id()
+        ]);
+
+        return $newSample;
+    }
+
+    /**
+     * Update original sample with remaining portion (Old method)
      */
     private function updateOriginalSample(Sample $sample, float $remainingWeight, int $remainingQuantity): void
     {

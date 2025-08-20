@@ -121,6 +121,46 @@
                         </div>
                     </div>
 
+                    <!-- Add this to your garden create form blade file -->
+<!-- Add this section after the Tea Selection section in create.blade.php -->
+
+<!-- Acceptable Invoice Types -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h6 class="text-primary border-bottom pb-2 mb-3">
+            <i class="fas fa-file-invoice me-2"></i>Acceptable Invoice Types
+        </h6>
+    </div>
+
+    <div class="col-12 mb-3">
+        <label class="form-label">Select Acceptable Invoice Types</label>
+        <div class="row">
+            @foreach(\App\Models\Garden::getInvoiceTypesOptions() as $key => $label)
+                <div class="col-md-4 mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input @error('acceptable_invoice_types') is-invalid @enderror" 
+                               type="checkbox" 
+                               name="acceptable_invoice_types[]" 
+                               value="{{ $key }}" 
+                               id="invoice_type_{{ $key }}"
+                               {{ in_array($key, old('acceptable_invoice_types', $garden->acceptable_invoice_types ?? [])) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="invoice_type_{{ $key }}">
+                            {{ $label }}
+                        </label>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        @error('acceptable_invoice_types')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+        <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Select the types of invoices this garden can accept.
+        </div>
+    </div>
+</div>
+
                     <!-- Multiple Category Tea Selection System -->
                     <div class="row mb-4">
                         <div class="col-12">

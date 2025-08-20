@@ -8,6 +8,7 @@ use App\Services\SampleService;
 use App\Services\SellerService;
 use App\Services\BatchService;
 use App\Models\Sample;
+use App\Models\SampleAllocation;
 use App\Services\SalesRegisterService;
 use App\Services\SampleTransferService;
 use Illuminate\Http\Request;
@@ -524,25 +525,22 @@ public function showTransferForm(int $id)
 public function transferToBatch(int $id, Request $request, SampleTransferService $transferService)
 {
     try {
-        // Validate the request
+        // Validate the request - no weight/quantity input needed
         $request->validate([
-            'transferred_weight' => 'required|numeric|min:0.01',
-            'transferred_quantity' => 'required|integer|min:1',
             'transfer_reason' => 'required|in:retesting,quality_check,additional_evaluation,other',
             'transfer_remarks' => 'nullable|string|max:1000'
         ]);
 
         $transferData = $request->only([
-            'transferred_weight',
-            'transferred_quantity', 
             'transfer_reason',
             'transfer_remarks'
         ]);
 
-        $result = $transferService->transferSampleToBatch($id, $transferData);
+        // Use new method for fixed allocation transfer
+        $result = $transferService->transferSampleForRetesting($id, $transferData);
 
         return redirect()->route('admin.samples.show', $id)
-            ->with('success', $result['message'] . ' New Sample ID: ' . $result['new_sample']->sample_id);
+            ->with('success', $result['message'] . ' New Sample ID: ' . $result['new_sample']->sample_id . ' (10gm allocated)');
 
     } catch (\Exception $e) {
         return redirect()->back()
@@ -584,5 +582,136 @@ public function transfers(Request $request, SampleTransferService $transferServi
     $transfers = $transferService->getAllTransfers($filters);
 
     return view('admin.samples.transfers', compact('transfers', 'filters'));
+}
+
+public function showAllocations(int $id)
+{
+    try {
+        $sample = $this->sampleService->getSampleById($id);
+        
+        if (!$sample) {
+            return redirect()->route('admin.samples.index')
+                ->with('error', 'Sample not found');
+        }
+
+        $allocations = SampleAllocation::where('sample_id', $id)
+            ->with(['batchGroup', 'allocatedBy'])
+            ->orderBy('allocation_date', 'desc')
+            ->paginate(15);
+
+        $allocationSummary = [
+            'total_allocations' => $sample->allocation_count,
+            'total_allocated_weight' => $sample->allocated_weight,
+            'available_weight' => $sample->available_weight,
+            'catalog_weight' => $sample->catalog_weight,
+            'can_allocate_more' => $sample->has_sufficient_weight,
+            'active_allocations' => $sample->activeAllocations()->count(),
+            'used_allocations' => $sample->allocations()->where('status', SampleAllocation::STATUS_USED)->count(),
+            'returned_allocations' => $sample->allocations()->where('status', SampleAllocation::STATUS_RETURNED)->count()
+        ];
+
+        return view('admin.samples.allocations', compact('sample', 'allocations', 'allocationSummary'));
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error loading allocations: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Return an allocation (if not used)
+ */
+public function returnAllocation(int $sampleId, int $allocationId)
+{
+    try {
+        $sample = Sample::findOrFail($sampleId);
+        $allocation = SampleAllocation::findOrFail($allocationId);
+
+        if ($allocation->sample_id !== $sample->id) {
+            return redirect()->back()
+                ->with('error', 'Allocation does not belong to this sample');
+        }
+
+        $sample->returnAllocation($allocation);
+
+        return redirect()->back()
+            ->with('success', 'Allocation returned successfully. Weight returned to sample catalog.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error returning allocation: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Mark allocation as used
+ */
+public function markAllocationUsed(int $sampleId, int $allocationId)
+{
+    try {
+        $sample = Sample::findOrFail($sampleId);
+        $allocation = SampleAllocation::findOrFail($allocationId);
+
+        if ($allocation->sample_id !== $sample->id) {
+            return redirect()->back()
+                ->with('error', 'Allocation does not belong to this sample');
+        }
+
+        $sample->markAllocationAsUsed($allocation);
+
+        return redirect()->back()
+            ->with('success', 'Allocation marked as used successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error updating allocation: ' . $e->getMessage());
+    }
+}
+
+public function showBatchCreation()
+{
+    $today = Carbon::today();
+    
+    // Get samples available for batching (with sufficient weight)
+    $availableSamples = Sample::unbatched()
+        ->forDate($today)
+        ->where('has_sufficient_weight', true)
+        ->with(['seller'])
+        ->get();
+
+    $statistics = [
+        'total_available' => $availableSamples->count(),
+        'total_catalog_weight' => $availableSamples->sum('catalog_weight'),
+        'total_available_weight' => $availableSamples->sum('available_weight'),
+        'potential_batches' => ceil($availableSamples->count() / 48),
+        'total_allocation_needed' => $availableSamples->count() * Sample::FIXED_ALLOCATION_WEIGHT,
+        'samples_insufficient_weight' => Sample::unbatched()
+            ->forDate($today)
+            ->where('has_sufficient_weight', false)
+            ->count()
+    ];
+
+    return view('admin.samples.batch-creation', compact('availableSamples', 'statistics', 'today'));
+}
+
+/**
+ * Get sample catalog summary
+ */
+public function getCatalogSummary()
+{
+    $summary = [
+        'total_samples' => Sample::count(),
+        'total_catalog_weight' => Sample::sum('catalog_weight'),
+        'total_allocated_weight' => Sample::sum('allocated_weight'),
+        'total_available_weight' => Sample::sum('available_weight'),
+        'samples_with_sufficient_weight' => Sample::where('has_sufficient_weight', true)->count(),
+        'samples_insufficient_weight' => Sample::where('has_sufficient_weight', false)->count(),
+        'total_allocations' => SampleAllocation::count(),
+        'active_allocations' => SampleAllocation::where('status', SampleAllocation::STATUS_ALLOCATED)->count(),
+        'used_allocations' => SampleAllocation::where('status', SampleAllocation::STATUS_USED)->count(),
+        'average_allocation_per_sample' => Sample::avg('allocation_count')
+    ];
+
+    return response()->json($summary);
 }
 }

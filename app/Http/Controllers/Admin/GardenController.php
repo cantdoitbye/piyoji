@@ -78,10 +78,12 @@ class GardenController extends BaseAdminController
             'pincode' => 'nullable|string|max:10',
             'tea_ids' => 'required|array|min:1',
             'tea_ids.*' => 'integer|exists:teas,id',
+              'acceptable_invoice_types' => 'nullable|array',
+        'acceptable_invoice_types.*' => 'string|in:UK,C,D',
             'altitude' => 'nullable|numeric|min:0',
             'speciality' => 'nullable|string',
             'status' => 'boolean',
-            'remarks' => 'nullable|string'
+            'remarks' => 'nullable|string',
         ];
 
         $validatedData = $request->validate($rules);
