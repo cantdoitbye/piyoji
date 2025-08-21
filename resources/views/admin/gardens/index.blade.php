@@ -142,6 +142,17 @@
                     <thead class="table-light">
                         <tr>
                             <th>Garden Name</th>
+                            <th class="text-center" style="min-width: 120px;">
+    <i class="fas fa-tag me-1"></i>Garden Type
+</th>
+<th class="text-center" style="min-width: 150px;">
+    <i class="fas fa-map-marker-alt me-1"></i>Location
+    <button type="button" class="btn btn-sm btn-link p-0 ms-1" 
+            data-bs-toggle="tooltip" 
+            title="Garden location coordinates">
+        <i class="fas fa-info-circle text-muted"></i>
+    </button>
+</th>
                             <th>Contact Person</th>
                             <th>Location</th>
                             <th>Tea Varieties</th>
@@ -160,6 +171,41 @@
                                         </small>
                                     @endif
                                 </td>
+                                <td class="text-center">
+    <span class="badge bg-{{ $garden->garden_type == 'garden' ? 'success' : 'info' }}">
+        {{ $garden->garden_type_text }}
+    </span>
+</td>
+<td class="text-center">
+    @if($garden->has_location)
+        <div class="location-cell">
+            <div class="mb-1">
+                <small class="text-muted">{{ $garden->formatted_location }}</small>
+            </div>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary btn-sm" 
+                        onclick="showLocationModal('{{ $garden->id }}', '{{ $garden->garden_name }}', {{ $garden->latitude }}, {{ $garden->longitude }})">
+                    <i class="fas fa-map me-1"></i>View
+                </button>
+                <a href="{{ $garden->google_maps_url }}" target="_blank" 
+                   class="btn btn-outline-info btn-sm"
+                   data-bs-toggle="tooltip" title="Open in Google Maps">
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+            </div>
+        </div>
+    @else
+        <div class="text-muted">
+            <i class="fas fa-map-marker-alt me-1"></i>
+            <small>Not set</small>
+            <br>
+            <a href="{{ route('admin.gardens.edit', $garden->id) }}" 
+               class="btn btn-outline-secondary btn-sm mt-1">
+                <i class="fas fa-plus me-1"></i>Add Location
+            </a>
+        </div>
+    @endif
+</td>
                                 <td>
                                     <div>{{ $garden->contact_person_name }}</div>
                                     <small class="text-muted">
@@ -200,6 +246,12 @@
                                            class="btn btn-outline-primary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+
+                                          <a href="{{ route('admin.gardens.invoices.index', $garden) }}" 
+           class="btn btn-outline-success" 
+           data-bs-toggle="tooltip" title="Manage Invoices">
+            <i class="fas fa-file-invoice"></i>
+        </a>
                                         <button type="button" class="btn btn-outline-{{ $garden->status ? 'warning' : 'success' }}"
                                                 onclick="toggleStatus({{ $garden->id }}, {{ $garden->status ? 'false' : 'true' }})"
                                                 title="{{ $garden->status ? 'Deactivate' : 'Activate' }}">

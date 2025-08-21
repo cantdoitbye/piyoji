@@ -13,6 +13,7 @@ class Garden extends Model
     protected $fillable = [
         'garden_name',
         'address',
+                'garden_type', // New field for garden type
         'contact_person_name',
         'mobile_no',
         'email',
@@ -25,6 +26,9 @@ class Garden extends Model
         'status',
         'remarks',
 'acceptable_invoice_types',
+        'invoice_type_variables', 
+
+
 
     ];
 
@@ -34,36 +38,165 @@ class Garden extends Model
         'poc_ids' => 'array',
         'status' => 'boolean',
 'acceptable_invoice_types' => 'array',
+        'invoice_type_variables' => 'array'
+
 
     ];
 
 
+ /**
+     * Get garden type options
+     */
+    public static function getGardenTypeOptions()
+    {
+        return [
+            'garden' => 'Garden',
+            'mark' => 'Mark'
+        ];
+    }
 
+      /**
+     * Get text representation of garden type
+     */
+    public function getGardenTypeTextAttribute()
+    {
+        $options = self::getGardenTypeOptions();
+        return $options[$this->garden_type] ?? 'Not specified';
+    }
+
+     /**
+     * Get formatted location coordinates
+     */
+    public function getFormattedLocationAttribute()
+    {
+        if ($this->latitude && $this->longitude) {
+            return $this->latitude . ', ' . $this->longitude;
+        }
+        return 'Location not set';
+    }
+
+    /**
+     * Check if garden has location coordinates
+     */
+    public function hasLocationAttribute()
+    {
+        return !empty($this->latitude) && !empty($this->longitude);
+    }
+
+    /**
+     * Get Google Maps URL for the location
+     */
+    public function getGoogleMapsUrlAttribute()
+    {
+        if ($this->has_location) {
+            return "https://www.google.com/maps?q={$this->latitude},{$this->longitude}";
+        }
+        return null;
+    }
 
 
    public static function getInvoiceTypesOptions()
 {
     return [
-        'UK' => 'UK (Brokens, Fannings)',
-        'C' => 'C (Brokens, Fannings)', 
-        'D' => 'D (Dust)'
-    ];
+            'fannings' => 'Fannings',
+            'brokens' => 'Brokens', 
+            'dust' => 'D (Dust)'
+        ];
 }
 
-// Add this accessor for text display
-public function getAcceptableInvoiceTypesTextAttribute()
-{
-    if (!$this->acceptable_invoice_types) {
-        return 'Not specified';
+  /**
+     * Get predefined variables for each invoice type
+     */
+    public static function getInvoiceTypeVariables()
+    {
+        return [
+            'fannings' => ['UKF', 'CF', 'BJF', 'AGF', 'Other'],
+            'brokens' => ['UKB', 'CB', 'BJB', 'AGB', 'Other'],
+            'dust' => ['UKD', 'CD', 'BJD', 'AGD', 'PD', 'Other']
+        ];
     }
-    
-    $options = self::getInvoiceTypesOptions();
-    $selected = array_map(function($type) use ($options) {
-        return $options[$type] ?? $type;
-    }, $this->acceptable_invoice_types);
-    
-    return implode(', ', $selected);
-}
+
+       public static function getAllAvailableVariables()
+    {
+        $variables = self::getInvoiceTypeVariables();
+        $allVariables = [];
+        
+        foreach ($variables as $type => $vars) {
+            foreach ($vars as $var) {
+                if (!in_array($var, $allVariables)) {
+                    $allVariables[] = $var;
+                }
+            }
+        }
+        
+        return $allVariables;
+    }
+
+// Add this accessor for text display
+   /**
+     * Get text representation of acceptable invoice types
+     */
+    public function getAcceptableInvoiceTypesTextAttribute()
+    {
+        if (!$this->acceptable_invoice_types) {
+            return 'Not specified';
+        }
+        
+        $options = self::getInvoiceTypesOptions();
+        $selected = array_map(function($type) use ($options) {
+            return $options[$type] ?? $type;
+        }, $this->acceptable_invoice_types);
+        
+        return implode(', ', $selected);
+    }
+
+     
+    public function getFormattedInvoiceTypesWithVariablesAttribute()
+    {
+        if (!$this->acceptable_invoice_types || !$this->invoice_type_variables) {
+            return 'Not specified';
+        }
+
+        $options = self::getInvoiceTypesOptions();
+        $formatted = [];
+
+        foreach ($this->acceptable_invoice_types as $type) {
+            $typeName = $options[$type] ?? $type;
+            $variables = $this->invoice_type_variables[$type] ?? [];
+            
+            if (!empty($variables)) {
+                $formatted[] = $typeName . ' (' . implode(', ', $variables) . ')';
+            } else {
+                $formatted[] = $typeName;
+            }
+        }
+
+        return implode('; ', $formatted);
+    }
+ /**
+     * Check if garden accepts a specific invoice type
+     */
+    public function acceptsInvoiceType($type)
+    {
+        return in_array($type, $this->acceptable_invoice_types ?? []);
+    }
+
+    /**
+     * Check if garden accepts a specific variable for a type
+     */
+    public function acceptsVariable($type, $variable)
+    {
+        $typeVariables = $this->getVariablesForType($type);
+        return in_array($variable, $typeVariables);
+    }
+        /**
+     * Get variables for a specific invoice type
+     */
+    public function getVariablesForType($type)
+    {
+        return $this->invoice_type_variables[$type] ?? [];
+    }
+
 
     // Relationships
     public function teas()

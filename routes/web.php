@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\{
     BuyerController,
     ContractController,
     CourierController,
+    GardenInvoiceController,
     LogisticCompanyController,
     SampleController,
     TeaController,
@@ -264,6 +265,40 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
     Route::resource('gardens', App\Http\Controllers\Admin\GardenController::class);
     Route::patch('gardens/{id}/toggle-status', [App\Http\Controllers\Admin\GardenController::class, 'toggleStatus'])->name('gardens.toggle-status');
     
+
+    
+    // Garden Invoice Management Routes
+    Route::group(['prefix' => 'gardens/{garden}'], function () {
+        
+        // Invoice CRUD routes
+        Route::get('/invoices', [GardenInvoiceController::class, 'index'])
+            ->name('gardens.invoices.index');
+            
+        Route::get('/invoices/create', [GardenInvoiceController::class, 'create'])
+            ->name('gardens.invoices.create');
+            
+        Route::post('/invoices', [GardenInvoiceController::class, 'store'])
+            ->name('gardens.invoices.store');
+            
+        Route::get('/invoices/{invoice}', [GardenInvoiceController::class, 'show'])
+            ->name('gardens.invoices.show');
+            
+        Route::get('/invoices/{invoice}/edit', [GardenInvoiceController::class, 'edit'])
+            ->name('gardens.invoices.edit');
+            
+        Route::put('/invoices/{invoice}', [GardenInvoiceController::class, 'update'])
+            ->name('gardens.invoices.update');
+            
+        Route::delete('/invoices/{invoice}', [GardenInvoiceController::class, 'destroy'])
+            ->name('gardens.invoices.destroy');
+        
+        // Invoice status management routes
+        Route::patch('/invoices/{invoice}/finalize', [GardenInvoiceController::class, 'finalize'])
+            ->name('gardens.invoices.finalize');
+            
+        Route::patch('/invoices/{invoice}/cancel', [GardenInvoiceController::class, 'cancel'])
+            ->name('gardens.invoices.cancel');
+    });
 
 
 
