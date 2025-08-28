@@ -401,13 +401,15 @@ class SampleService
             }
 
             // Calculate overall score if individual scores are provided
-            if (isset($evaluationData['aroma_score']) && 
-                isset($evaluationData['liquor_score']) && 
-                isset($evaluationData['appearance_score'])) {
+            if (isset($evaluationData['color_score']) && 
+                isset($evaluationData['taste_score']) && 
+                isset($evaluationData['strength_score']) && 
+                isset($evaluationData['briskness_score'])) {
                 
-                $overallScore = ($evaluationData['aroma_score'] + 
-                               $evaluationData['liquor_score'] + 
-                               $evaluationData['appearance_score']) / 3;
+                $overallScore = ($evaluationData['color_score'] + 
+                               $evaluationData['taste_score'] + 
+                               $evaluationData['strength_score'] + 
+                               $evaluationData['briskness_score']) / 4;
                 $evaluationData['overall_score'] = round($overallScore, 1);
             }
 
@@ -426,7 +428,6 @@ class SampleService
                 'evaluated_at' => now(),
                 'updated_by' => $userId
             ]);
-
             $sample->update($updateData);
 
             DB::commit();

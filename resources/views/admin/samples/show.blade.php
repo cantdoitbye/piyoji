@@ -282,10 +282,10 @@
                             <div class="col-md-3">
                                 <div class="text-center">
                                     <div class="mb-2">
-                                        <i class="fas fa-nose fa-2x text-primary"></i>
+                                        <i class="fas fa-cube fa-2x text-primary"></i>
                                     </div>
-                                    <h6 class="fw-bold">Aroma Score</h6>
-                                    <h3 class="text-primary">{{ $sample->aroma_score }}/10</h3>
+                                    <h6 class="fw-bold">Color Score</h6>
+                                    <h3 class="text-primary">{{ $sample->color_score }}/100</h3>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -293,8 +293,8 @@
                                     <div class="mb-2">
                                         <i class="fas fa-tint fa-2x text-info"></i>
                                     </div>
-                                    <h6 class="fw-bold">Liquor Score</h6>
-                                    <h3 class="text-info">{{ $sample->liquor_score }}/10</h3>
+                                    <h6 class="fw-bold">Taste Score</h6>
+                                    <h3 class="text-info">{{ $sample->taste_score }}/100</h3>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -302,28 +302,17 @@
                                     <div class="mb-2">
                                         <i class="fas fa-eye fa-2x text-warning"></i>
                                     </div>
-                                    <h6 class="fw-bold">Appearance Score</h6>
-                                    <h3 class="text-warning">{{ $sample->appearance_score }}/10</h3>
+                                    <h6 class="fw-bold">Strength Score</h6>
+                                    <h3 class="text-warning">{{ $sample->strength_score }}/100</h3>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="text-center">
                                     <div class="mb-2">
-                                        <i class="fas fa-trophy fa-2x text-success"></i>
+                                        <i class="fas fa-align-justify fa-2x text-warning"></i>
                                     </div>
-                                    <h6 class="fw-bold">Overall Score</h6>
-                                    <h3 class="text-success">{{ $sample->overall_score }}/10</h3>
-                                    <span class="badge {{ $sample->overall_score >= 8 ? 'bg-success' : ($sample->overall_score >= 6 ? 'bg-primary' : ($sample->overall_score >= 4 ? 'bg-warning' : 'bg-danger')) }}">
-                                        @if($sample->overall_score >= 8)
-                                            Excellent
-                                        @elseif($sample->overall_score >= 6)
-                                            Good
-                                        @elseif($sample->overall_score >= 4)
-                                            Average
-                                        @else
-                                            Poor
-                                        @endif
-                                    </span>
+                                    <h6 class="fw-bold">Briskness Score</h6>
+                                    <h3 class="text-warning">{{ $sample->briskness_score }}/100</h3>
                                 </div>
                             </div>
                         </div>
