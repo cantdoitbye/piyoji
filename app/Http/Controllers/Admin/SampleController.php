@@ -108,7 +108,7 @@ class SampleController extends Controller
                 return redirect()->route('admin.samples.index')
                     ->with('error', 'Sample not found');
             }
-
+            
             return view('admin.samples.show', compact('sample'));
         } catch (\Exception $e) {
             return redirect()->route('admin.samples.index')
@@ -215,8 +215,7 @@ class SampleController extends Controller
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
-        }
-
+        } 
         try {
             $sample = $this->sampleService->storeEvaluation($id, $validator->validated(), Auth::id());
             
@@ -397,9 +396,10 @@ class SampleController extends Controller
     protected function validateEvaluation(Request $request)
     {
         return Validator::make($request->all(), [
-            'aroma_score' => 'required|numeric|min:0|max:10',
-            'liquor_score' => 'required|numeric|min:0|max:10',
-            'appearance_score' => 'required|numeric|min:0|max:10',
+            'color_score' => 'required|numeric|min:0|max:100',
+            'taste_score' => 'required|numeric|min:0|max:100',
+            'strength_score' => 'required|numeric|min:0|max:100',
+            'briskness_score' => 'required|numeric|min:0|max:100',
             'evaluation_comments' => 'nullable|string|max:1000'
         ]);
     }

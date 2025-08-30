@@ -98,32 +98,32 @@
                             <div class="col-md-3">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h6 class="card-title">Aroma Score</h6>
-                                        <h3 class="text-primary">{{ $sample->aroma_score }}/10</h3>
+                                        <h6 class="card-title">Color Score</h6>
+                                        <h3 class="text-primary">{{ $sample->color_score }}/100</h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h6 class="card-title">Liquor Score</h6>
-                                        <h3 class="text-info">{{ $sample->liquor_score }}/10</h3>
+                                        <h6 class="card-title">Taste Score</h6>
+                                        <h3 class="text-info">{{ $sample->taste_score }}/100</h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card text-center">
                                     <div class="card-body">
-                                        <h6 class="card-title">Appearance Score</h6>
-                                        <h3 class="text-warning">{{ $sample->appearance_score }}/10</h3>
+                                        <h6 class="card-title">Strength Score</h6>
+                                        <h3 class="text-warning">{{ $sample->strength_score }}/100</h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card text-center border-success">
                                     <div class="card-body">
-                                        <h6 class="card-title">Overall Score</h6>
-                                        <h3 class="text-success">{{ $sample->overall_score }}/10</h3>
+                                        <h6 class="card-title">Briskness Score</h6>
+                                        <h3 class="text-success">{{ $sample->briskness_score }}/100</h3>
                                     </div>
                                 </div>
                             </div>
@@ -141,85 +141,90 @@
                             @csrf
                             
                             <div class="row g-4">
-                                <!-- Aroma Score -->
-                                <div class="col-md-4">
+                                <!-- Color Score -->
+                                <div class="col-md-6">
                                     <div class="card">
                                         <div class="card-header bg-primary text-white text-center">
-                                            <h6 class="mb-0"><i class="fas fa-nose me-1"></i> Aroma Score</h6>
+                                            <h6 class="mb-0"><i class="fas fa-cube me-1"></i> Color Score</h6>
                                         </div>
                                         <div class="card-body text-center">
-                                            <label for="aroma_score" class="form-label">Rate the aroma (0-10)</label>
-                                            <input type="range" class="form-range mb-3" id="aroma_score" name="aroma_score" 
-                                                   min="0" max="10" step="0.1" value="{{ old('aroma_score', 5) }}" 
-                                                   oninput="updateScoreDisplay('aroma')">
+                                            <label for="color_score" class="form-label">Rate the color (0-100)</label>
+                                            <input type="range" class="form-range mb-3" id="color_score" name="color_score" 
+                                                   min="0" max="100" step="1" value="{{ old('color_score', 5) }}" 
+                                                   oninput="updateScoreDisplay('color')">
                                             <div class="score-display">
-                                                <span id="aromaDisplay" class="h4 text-primary">5.0</span>/10
+                                                <span id="colorDisplay" class="h4 text-primary">5</span>/100
                                             </div>
-                                            <input type="hidden" id="aroma_score_hidden" name="aroma_score" value="5.0">
-                                            @error('aroma_score')
+                                            <input type="hidden" id="color_score_hidden" name="color_score" value="5">
+                                            @error('color_score')
                                                 <div class="text-danger small">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Liquor Score -->
-                                <div class="col-md-4">
+                                <!-- Taste Score -->
+                                <div class="col-md-6">
                                     <div class="card">
                                         <div class="card-header bg-info text-white text-center">
-                                            <h6 class="mb-0"><i class="fas fa-tint me-1"></i> Liquor Score</h6>
+                                            <h6 class="mb-0"><i class="fas fa-tint me-1"></i> Taste Score</h6>
                                         </div>
                                         <div class="card-body text-center">
-                                            <label for="liquor_score" class="form-label">Rate the liquor (0-10)</label>
-                                            <input type="range" class="form-range mb-3" id="liquor_score" name="liquor_score" 
-                                                   min="0" max="10" step="0.1" value="{{ old('liquor_score', 5) }}" 
-                                                   oninput="updateScoreDisplay('liquor')">
+                                            <label for="taste_score" class="form-label">Rate the taste (0-100)</label>
+                                            <input type="range" class="form-range mb-3" id="taste_score" name="taste_score" 
+                                                   min="0" max="100" step="1" value="{{ old('taste_score', 5) }}" 
+                                                   oninput="updateScoreDisplay('taste')">
                                             <div class="score-display">
-                                                <span id="liquorDisplay" class="h4 text-info">5.0</span>/10
+                                                <span id="tasteDisplay" class="h4 text-info">5</span>/100
                                             </div>
-                                            <input type="hidden" id="liquor_score_hidden" name="liquor_score" value="5.0">
-                                            @error('liquor_score')
+                                            <input type="hidden" id="taste_score_hidden" name="taste_score" value="5">
+                                            @error('taste_score')
                                                 <div class="text-danger small">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Appearance Score -->
-                                <div class="col-md-4">
+                                <!-- Strength Score -->
+                                <div class="col-md-6">
                                     <div class="card">
                                         <div class="card-header bg-warning text-white text-center">
-                                            <h6 class="mb-0"><i class="fas fa-eye me-1"></i> Appearance Score</h6>
+                                            <h6 class="mb-0"><i class="fas fa-eye me-1"></i> Strength Score</h6>
                                         </div>
                                         <div class="card-body text-center">
-                                            <label for="appearance_score" class="form-label">Rate the appearance (0-10)</label>
-                                            <input type="range" class="form-range mb-3" id="appearance_score" name="appearance_score" 
-                                                   min="0" max="10" step="0.1" value="{{ old('appearance_score', 5) }}" 
-                                                   oninput="updateScoreDisplay('appearance')">
+                                            <label for="strength_score" class="form-label">Rate the strength (0-100)</label>
+                                            <input type="range" class="form-range mb-3" id="strength_score" name="strength_score" 
+                                                   min="0" max="100" step="1" value="{{ old('strength_score', 5) }}" 
+                                                   oninput="updateScoreDisplay('strength')">
                                             <div class="score-display">
-                                                <span id="appearanceDisplay" class="h4 text-warning">5.0</span>/10
+                                                <span id="strengthDisplay" class="h4 text-warning">5</span>/100
                                             </div>
-                                            <input type="hidden" id="appearance_score_hidden" name="appearance_score" value="5.0">
-                                            @error('appearance_score')
+                                            <input type="hidden" id="strength_score_hidden" name="strength_score" value="5">
+                                            @error('strength_score')
                                                 <div class="text-danger small">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Overall Score Display -->
-                            <div class="row mt-4">
-                                <div class="col-md-12">
-                                    <div class="card border-success">
-                                        <div class="card-header bg-success text-white text-center">
-                                            <h5 class="mb-0"><i class="fas fa-star me-1"></i> Overall Score (Auto-calculated)</h5>
+                                <!-- Briskness Score -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-danger text-white text-center">
+                                            <h6 class="mb-0"><i class="fas fa-align-justify me-1"></i> Briskness Score</h6>
                                         </div>
                                         <div class="card-body text-center">
-                                            <h1 id="overallScore" class="text-success">5.0</h1>
-                                            <p class="mb-0">
-                                                <span id="scoreStatus" class="badge bg-warning">Average</span>
-                                            </p>
+                                            <label for="briskness_score" class="form-label">Rate the briskness (0-100)</label>
+                                            <input type="range" class="form-range mb-3" id="briskness_score" name="briskness_score" 
+                                                   min="0" max="100" step="1" value="{{ old('briskness_score', 5) }}" 
+                                                   oninput="updateScoreDisplay('briskness')">
+                                            <div class="score-display">
+                                                <span id="brisknessDisplay" class="h4 text-warning">5</span>/10
+                                            </div>
+                                            <input type="hidden" id="briskness_score_hidden" name="briskness_score" value="5">
+                                            @error('briskness_score')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -278,25 +283,32 @@
                         </small>
                     </div>
                     
-                    <h6 class="small fw-bold mb-2">Aroma Evaluation:</h6>
+                    <h6 class="small fw-bold mb-2">Color Evaluation:</h6>
                     <ul class="small mb-3">
-                        <li>Intensity and complexity</li>
-                        <li>Freshness and clarity</li>
-                        <li>Characteristic tea notes</li>
+                        <li>Color and clarity</li>
+                        <li>Leaf quality and uniformity</li>
+                        <li>Overall visual appeal</li>
                     </ul>
                     
-                    <h6 class="small fw-bold mb-2">Liquor Evaluation:</h6>
+                    <h6 class="small fw-bold mb-2">Taste Evaluation:</h6>
                     <ul class="small mb-3">
                         <li>Taste balance and strength</li>
                         <li>Mouthfeel and body</li>
                         <li>Aftertaste quality</li>
                     </ul>
                     
-                    <h6 class="small fw-bold mb-2">Appearance Evaluation:</h6>
+                    <h6 class="small fw-bold mb-2">Strength Evaluation:</h6>
+                    <ul class="small mb-3">
+                        <li>Intensity and complexity</li>
+                        <li>Freshness and clarity</li>
+                        <li>Characteristic tea notes</li>
+                    </ul>
+
+                    <h6 class="small fw-bold mb-2">Briskness Evaluation:</h6>
                     <ul class="small mb-0">
-                        <li>Color and clarity</li>
-                        <li>Leaf quality and uniformity</li>
-                        <li>Overall visual appeal</li>
+                        <li>Briskness and complexity</li>
+                        <li>Freshness and clarity</li>
+                        <li>Characteristic tea notes</li>
                     </ul>
                 </div>
             </div>
@@ -357,10 +369,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize score displays
-    updateScoreDisplay('aroma');
-    updateScoreDisplay('liquor');
-    updateScoreDisplay('appearance');
-    calculateOverallScore();
+    updateScoreDisplay('color');
+    updateScoreDisplay('taste');
+    updateScoreDisplay('strength');
+    updateScoreDisplay('briskness');
 });
 
 function updateScoreDisplay(type) {
@@ -368,53 +380,19 @@ function updateScoreDisplay(type) {
     const display = document.getElementById(type + 'Display');
     const hidden = document.getElementById(type + '_score_hidden');
     
-    const value = parseFloat(slider.value);
-    display.textContent = value.toFixed(1);
-    hidden.value = value.toFixed(1);
+    const value = parseInt(slider.value);
+    display.textContent = value;
+    hidden.value = value;
     
     // Update color based on score
     let colorClass = '';
-    if (value >= 8) colorClass = 'text-success';
-    else if (value >= 6) colorClass = 'text-primary';
-    else if (value >= 4) colorClass = 'text-warning';
+    if (value >= 80) colorClass = 'text-success';
+    else if (value >= 60) colorClass = 'text-primary';
+    else if (value >= 40) colorClass = 'text-warning';
     else colorClass = 'text-danger';
     
     display.className = 'h4 ' + colorClass;
     
-    // Calculate overall score
-    calculateOverallScore();
-}
-
-function calculateOverallScore() {
-    const aromaScore = parseFloat(document.getElementById('aroma_score').value);
-    const liquorScore = parseFloat(document.getElementById('liquor_score').value);
-    const appearanceScore = parseFloat(document.getElementById('appearance_score').value);
-    
-    const overallScore = ((aromaScore + liquorScore + appearanceScore) / 3).toFixed(1);
-    
-    document.getElementById('overallScore').textContent = overallScore;
-    
-    // Update status badge
-    const statusBadge = document.getElementById('scoreStatus');
-    let badgeClass = '';
-    let statusText = '';
-    
-    if (overallScore >= 8) {
-        badgeClass = 'badge bg-success';
-        statusText = 'Excellent - Approved';
-    } else if (overallScore >= 6) {
-        badgeClass = 'badge bg-primary';
-        statusText = 'Good - Approved';
-    } else if (overallScore >= 4) {
-        badgeClass = 'badge bg-warning';
-        statusText = 'Average - Review Required';
-    } else {
-        badgeClass = 'badge bg-danger';
-        statusText = 'Poor - Rejected';
-    }
-    
-    statusBadge.className = badgeClass;
-    statusBadge.textContent = statusText;
 }
 
 // Form submission confirmation
@@ -447,9 +425,10 @@ function autoSave() {
         // Save current evaluation state to localStorage
         const evaluationData = {
             sample_id: {{ $sample->id }},
-            aroma_score: document.getElementById('aroma_score').value,
-            liquor_score: document.getElementById('liquor_score').value,
-            appearance_score: document.getElementById('appearance_score').value,
+            color_score: document.getElementById('color_score').value,
+            taste_score: document.getElementById('taste_score').value,
+            strength_score: document.getElementById('strength_score').value,
+            briskness_score: document.getElementById('briskness_score').value,
             evaluation_comments: document.getElementById('evaluation_comments').value,
             timestamp: new Date().toISOString()
         };
@@ -468,14 +447,16 @@ if (savedData) {
         // If saved data is less than 1 hour old, ask if user wants to restore
         if (timeDiff < 3600000) {
             if (confirm('Found unsaved evaluation data. Would you like to restore it?')) {
-                document.getElementById('aroma_score').value = data.aroma_score;
-                document.getElementById('liquor_score').value = data.liquor_score;
-                document.getElementById('appearance_score').value = data.appearance_score;
+                document.getElementById('color_score').value = data.color_score;
+                document.getElementById('taste_score').value = data.taste_score;
+                document.getElementById('strength_score').value = data.strength_score;
+                document.getElementById('briskness_score').value = data.briskness_score;
                 document.getElementById('evaluation_comments').value = data.evaluation_comments;
                 
-                updateScoreDisplay('aroma');
-                updateScoreDisplay('liquor');
-                updateScoreDisplay('appearance');
+                updateScoreDisplay('color');
+                updateScoreDisplay('taste');
+                updateScoreDisplay('strength');
+                updateScoreDisplay('briskness');
             }
         }
     } catch (e) {
@@ -484,9 +465,10 @@ if (savedData) {
 }
 
 // Add auto-save listeners
-document.getElementById('aroma_score')?.addEventListener('input', autoSave);
-document.getElementById('liquor_score')?.addEventListener('input', autoSave);
-document.getElementById('appearance_score')?.addEventListener('input', autoSave);
+document.getElementById('color_score')?.addEventListener('input', autoSave);
+document.getElementById('taste_score')?.addEventListener('input', autoSave);
+document.getElementById('strength_score')?.addEventListener('input', autoSave);
+document.getElementById('briskness_score')?.addEventListener('input', autoSave);
 document.getElementById('evaluation_comments')?.addEventListener('input', autoSave);
 
 // Clear auto-saved data on successful submission
