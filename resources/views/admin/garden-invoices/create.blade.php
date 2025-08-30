@@ -56,6 +56,21 @@
                                 @enderror
                             </div>
 
+                            <!-- Manual Invoice Number -->
+                            <div class="col-md-6 mb-3">
+                                <label for="invoice_number" class="form-label">
+                                    Invoice Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control @error('invoice_number') is-invalid @enderror" 
+                                       id="invoice_number" name="invoice_number" 
+                                       value="{{ old('invoice_number') }}" 
+                                       placeholder="Enter invoice number (e.g., INV001, ABC123)" required>
+                                <div class="form-text">Enter custom invoice number</div>
+                                @error('invoice_number')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Invoice Prefix -->
                             <div class="col-md-6 mb-3">
                                 <label for="invoice_prefix" class="form-label">
@@ -70,8 +85,67 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <div class="form-text">Invoice number will be auto-generated</div>
                                 @error('invoice_prefix')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Category Type Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category_type" class="form-label">
+                                    Category Type <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select @error('category_type') is-invalid @enderror" 
+                                        id="category_type" name="category_type" required onchange="loadVariables()">
+                                    <option value="">Select Category Type</option>
+                                    @if(isset($gardenInvoiceTypes))
+                                        @foreach($gardenInvoiceTypes as $type)
+                                            @php
+                                                $typeLabels = ['fannings' => 'Fannings', 'brokens' => 'Brokens', 'dust' => 'D (Dust)'];
+                                            @endphp
+                                            <option value="{{ $type }}" {{ old('category_type') == $type ? 'selected' : '' }}>
+                                                {{ $typeLabels[$type] ?? $type }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <div class="form-text">Available types for this garden</div>
+                                @error('category_type')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Variables Selection -->
+                            <div class="col-md-6 mb-3" id="variables-section" style="display: none;">
+                                <label class="form-label">
+                                    Variables <span class="text-danger">*</span>
+                                </label>
+                                <div id="variables-container" class="border rounded p-2 bg-light">
+                                    <!-- Variables will be loaded here based on category selection -->
+                                </div>
+                                @error('variables')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Grade Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label for="grade" class="form-label">
+                                    Grade <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select @error('grade') is-invalid @enderror" 
+                                        id="grade" name="grade" required>
+                                    <option value="">Select Grade</option>
+                                    @if(isset($availableGrades))
+                                        @foreach($availableGrades as $grade)
+                                            <option value="{{ $grade }}" {{ old('grade') == $grade ? 'selected' : '' }}>
+                                                {{ $grade }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <div class="form-text">Available grades from garden setup</div>
+                                @error('grade')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -192,6 +266,18 @@
                                 <small class="text-muted">{{ $garden->formatted_location }}</small>
                             </div>
                         @endif
+
+                        <!-- Display Selected Category Info -->
+                        <div class="mb-3" id="selected-category-info" style="display: none;">
+                            <strong>Selected Category:</strong><br>
+                            <span class="badge bg-primary" id="category-display"></span>
+                        </div>
+
+                        <!-- Display Selected Variables -->
+                        <div class="mb-3" id="selected-variables-info" style="display: none;">
+                            <strong>Selected Variables:</strong><br>
+                            <div id="variables-display" class="mt-2"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -232,7 +318,78 @@
 let sampleIndex = 0;
 let samples = [];
 
-// Add sample row
+// Garden variables from backend
+const gardenVariables = @json($gardenVariables ?? []);
+
+// Load variables based on selected category type
+function loadVariables() {
+    const categoryType = document.getElementById('category_type').value;
+    const variablesSection = document.getElementById('variables-section');
+    const variablesContainer = document.getElementById('variables-container');
+    const categoryInfo = document.getElementById('selected-category-info');
+    const categoryDisplay = document.getElementById('category-display');
+    
+    if (!categoryType) {
+        variablesSection.style.display = 'none';
+        categoryInfo.style.display = 'none';
+        updateVariablesDisplay();
+        return;
+    }
+    
+    // Update category display
+    const typeLabels = {'fannings': 'Fannings', 'brokens': 'Brokens', 'dust': 'D (Dust)'};
+    categoryDisplay.textContent = typeLabels[categoryType] || categoryType;
+    categoryInfo.style.display = 'block';
+    
+    const variables = gardenVariables[categoryType] || [];
+    
+    if (variables.length === 0) {
+        variablesSection.style.display = 'none';
+        updateVariablesDisplay();
+        return;
+    }
+    
+    // Build variables checkboxes
+    let html = '';
+    variables.forEach(variable => {
+        const isChecked = @json(old('variables', [])).includes(variable) ? 'checked' : '';
+        html += `
+            <div class="form-check form-check-inline mb-2">
+                <input class="form-check-input" type="checkbox" 
+                       id="var_${variable}" name="variables[]" value="${variable}" 
+                       onchange="updateVariablesDisplay()" ${isChecked}>
+                <label class="form-check-label" for="var_${variable}">${variable}</label>
+            </div>
+        `;
+    });
+    
+    variablesContainer.innerHTML = html;
+    variablesSection.style.display = 'block';
+    updateVariablesDisplay();
+}
+
+// Update variables display in sidebar
+function updateVariablesDisplay() {
+    const selectedVars = Array.from(document.querySelectorAll('input[name="variables[]"]:checked'))
+        .map(cb => cb.value);
+    
+    const variablesInfo = document.getElementById('selected-variables-info');
+    const variablesDisplay = document.getElementById('variables-display');
+    
+    if (selectedVars.length === 0) {
+        variablesInfo.style.display = 'none';
+        return;
+    }
+    
+    const badgesHtml = selectedVars.map(variable => 
+        `<span class="badge bg-secondary me-1 mb-1">${variable}</span>`
+    ).join('');
+    
+    variablesDisplay.innerHTML = badgesHtml;
+    variablesInfo.style.display = 'block';
+}
+
+// Add sample row (without sample code field - it will be auto-generated)
 function addSample() {
     const container = document.getElementById('samples-container');
     const index = sampleIndex++;
@@ -242,6 +399,7 @@ function addSample() {
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="text-secondary mb-0">
                     <i class="fas fa-vial me-2"></i>Sample ${index + 1}
+                    <small class="text-muted">(Code will be auto-generated)</small>
                 </h6>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSample(${index})">
                     <i class="fas fa-times"></i>
@@ -249,13 +407,6 @@ function addSample() {
             </div>
             
             <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Sample Code <small class="text-muted">(Optional)</small></label>
-                    <input type="text" class="form-control" 
-                           name="samples[${index}][sample_code]" 
-                           placeholder="S001, A1, etc.">
-                </div>
-                
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Sample Weight (kg) <span class="text-danger">*</span></label>
                     <input type="number" step="0.001" class="form-control sample-weight" 
@@ -272,13 +423,13 @@ function addSample() {
                            onchange="updateSampleTotal(${index})" required>
                 </div>
                 
-                <div class="col-md-6 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Total Sample Weight</label>
                     <input type="text" class="form-control bg-light sample-total" 
                            id="sample-total-${index}" readonly>
                 </div>
                 
-                <div class="col-md-6 mb-3">
+                <div class="col-12 mb-3">
                     <label class="form-label">Sample Notes <small class="text-muted">(Optional)</small></label>
                     <input type="text" class="form-control" 
                            name="samples[${index}][sample_notes]" 
@@ -358,6 +509,9 @@ function resetForm() {
     if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
         document.getElementById('invoiceForm').reset();
         document.getElementById('samples-container').innerHTML = '';
+        document.getElementById('variables-section').style.display = 'none';
+        document.getElementById('selected-category-info').style.display = 'none';
+        document.getElementById('selected-variables-info').style.display = 'none';
         sampleIndex = 0;
         updateTotals();
         updateSubmitButton();
@@ -371,6 +525,21 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
     if (sampleCount === 0) {
         e.preventDefault();
         alert('Please add at least one sample to create the invoice.');
+        return;
+    }
+    
+    // Validate category type and variables
+    const categoryType = document.getElementById('category_type').value;
+    if (!categoryType) {
+        e.preventDefault();
+        alert('Please select a category type.');
+        return;
+    }
+    
+    const selectedVars = document.querySelectorAll('input[name="variables[]"]:checked');
+    if (selectedVars.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one variable for the selected category.');
         return;
     }
     
@@ -401,9 +570,16 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
     }
 });
 
-// Initialize with one sample
+// Initialize form
 document.addEventListener('DOMContentLoaded', function() {
+    // Add first sample
     addSample();
+    
+    // Load variables if category is already selected (for old input)
+    const categoryType = document.getElementById('category_type').value;
+    if (categoryType) {
+        loadVariables();
+    }
 });
 </script>
 
@@ -433,6 +609,25 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #0d6efd;
 }
 
+#variables-container {
+    min-height: 60px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#variables-container:empty::before {
+    content: "Select a category type to view available variables";
+    color: #6c757d;
+    font-style: italic;
+    display: block;
+    text-align: center;
+    padding: 20px;
+}
+
+.form-check-inline {
+    margin-right: 15px;
+}
+
 @media (max-width: 768px) {
     .sample-row {
         padding: 1rem;
@@ -440,6 +635,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .btn-group {
         flex-direction: column;
+    }
+    
+    .form-check-inline {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 10px;
     }
 }
 </style>

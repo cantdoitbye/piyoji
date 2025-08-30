@@ -59,88 +59,227 @@ class GardenInvoiceController extends Controller
      */
     public function create(Garden $garden): View
     {
-        $invoicePrefixes = $this->getInvoicePrefixes($garden);
+        // $invoicePrefixes = $this->getInvoicePrefixes($garden);
         
-        return view('admin.garden-invoices.create', compact('garden', 'invoicePrefixes'));
+         // return view('admin.garden-invoices.create', compact('garden', 'invoicePrefixes'));
+         $invoicePrefixes = $this->getInvoicePrefixes($garden);
+    
+    // Get garden's acceptable invoice types and their variables
+    $gardenInvoiceTypes = $garden->acceptable_invoice_types ?? [];
+    $gardenVariables = $garden->invoice_type_variables ?? [];
+    
+    // Get available grades from garden's category filters
+    $availableGrades = $this->getAvailableGrades($garden);
+    
+    return view('admin.garden-invoices.create', compact(
+        'garden', 
+        'invoicePrefixes', 
+        'gardenInvoiceTypes', 
+        'gardenVariables',
+        'availableGrades'
+    ));
+   
     }
 
     /**
      * Store a newly created invoice with samples
      */
-    public function store(Garden $garden, Request $request): RedirectResponse|JsonResponse
-    {
-        $validatedData = $request->validate([
-            'invoice_prefix' => 'required|string|max:10',
-            'bags_packages' => 'required|integer|min:0',
-            'packaging_date' => 'required|date',
-            'notes' => 'nullable|string|max:1000',
-            'samples' => 'required|array|min:1',
-            'samples.*.sample_code' => 'nullable|string|max:50',
-            'samples.*.sample_weight' => 'required|numeric|min:0.001|max:999999.999',
-            'samples.*.number_of_sets' => 'required|integer|min:1',
-            'samples.*.sample_notes' => 'nullable|string|max:500'
-        ]);
+    // public function store(Garden $garden, Request $request): RedirectResponse|JsonResponse
+    // {
+    //     $validatedData = $request->validate([
+    //         'invoice_prefix' => 'required|string|max:10',
+    //         'bags_packages' => 'required|integer|min:0',
+    //         'packaging_date' => 'required|date',
+    //         'notes' => 'nullable|string|max:1000',
+    //         'samples' => 'required|array|min:1',
+    //         // 'samples.*.sample_code' => 'nullable|string|max:50',
+    //         'samples.*.sample_weight' => 'required|numeric|min:0.001|max:999999.999',
+    //         'samples.*.number_of_sets' => 'required|integer|min:1',
+    //         'samples.*.sample_notes' => 'nullable|string|max:500'
+    //     ]);
 
-        try {
-            DB::beginTransaction();
+    //     try {
+    //         DB::beginTransaction();
 
-            // Generate invoice number
-            $invoiceNumber = GardenInvoice::generateInvoiceNumber($validatedData['invoice_prefix']);
+    //         // Generate invoice number
+    //         $invoiceNumber = GardenInvoice::generateInvoiceNumber($validatedData['invoice_prefix']);
 
-            // Create invoice
-            $invoice = GardenInvoice::create([
-                'garden_id' => $garden->id,
-                'mark_name' => $garden->garden_name,
-                'invoice_prefix' => $validatedData['invoice_prefix'],
-                'invoice_number' => $invoiceNumber,
-                'bags_packages' => $validatedData['bags_packages'],
-                'packaging_date' => $validatedData['packaging_date'],
-                'notes' => $validatedData['notes'],
-                'created_by' => auth()->id()
-            ]);
+    //         // Create invoice
+    //         $invoice = GardenInvoice::create([
+    //             'garden_id' => $garden->id,
+    //             'mark_name' => $garden->garden_name,
+    //             'invoice_prefix' => $validatedData['invoice_prefix'],
+    //             'invoice_number' => $invoiceNumber,
+    //             'bags_packages' => $validatedData['bags_packages'],
+    //             'packaging_date' => $validatedData['packaging_date'],
+    //             'notes' => $validatedData['notes'],
+    //             'created_by' => auth()->id()
+    //         ]);
 
-            // Create samples
-            foreach ($validatedData['samples'] as $sampleData) {
-                $invoice->addSample([
-                    'sample_code' => $sampleData['sample_code'],
-                    'sample_weight' => $sampleData['sample_weight'],
-                    'number_of_sets' => $sampleData['number_of_sets'],
-                    'sample_notes' => $sampleData['sample_notes']
-                ]);
-            }
+    //         // Create samples
+    //         foreach ($validatedData['samples'] as $sampleData) {
+    //             $invoice->addSample([
+    //                 'sample_code' => $sampleData['sample_code'],
+    //                 'sample_weight' => $sampleData['sample_weight'],
+    //                 'number_of_sets' => $sampleData['number_of_sets'],
+    //                 'sample_notes' => $sampleData['sample_notes']
+    //             ]);
+    //         }
 
-            // Update total weight (will be calculated from samples)
-            $invoice->updateTotalWeight();
+    //         // Update total weight (will be calculated from samples)
+    //         $invoice->updateTotalWeight();
 
-            DB::commit();
+    //         DB::commit();
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Invoice created successfully.',
-                    'invoice' => $invoice->load('samples')
-                ]);
-            }
+    //         if ($request->ajax()) {
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Invoice created successfully.',
+    //                 'invoice' => $invoice->load('samples')
+    //             ]);
+    //         }
 
-            return redirect()
-                ->route('admin.gardens.invoices.index', $garden)
-                ->with('success', 'Invoice created successfully with ' . count($validatedData['samples']) . ' samples.');
+    //         return redirect()
+    //             ->route('admin.gardens.invoices.index', $garden)
+    //             ->with('success', 'Invoice created successfully with ' . count($validatedData['samples']) . ' samples.');
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
             
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error creating invoice: ' . $e->getMessage()
-                ], 422);
-            }
+    //         if ($request->ajax()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Error creating invoice: ' . $e->getMessage()
+    //             ], 422);
+    //         }
 
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Error creating invoice: ' . $e->getMessage()]);
+    //         return back()
+    //             ->withInput()
+    //             ->withErrors(['error' => 'Error creating invoice: ' . $e->getMessage()]);
+    //     }
+    // }
+
+
+    public function store(Garden $garden, Request $request): RedirectResponse|JsonResponse
+{
+    $validatedData = $request->validate([
+        'invoice_number' => 'required|string|max:50|unique:garden_invoices,invoice_number', // Manual invoice number
+        'invoice_prefix' => 'required|string|max:10',
+        'category_type' => 'required|string|in:fannings,brokens,dust', // New field
+        'variables' => 'required|array|min:1', // Selected variables for the category
+        'variables.*' => 'string',
+        'grade' => 'required|string|max:50', // New grade field
+        'bags_packages' => 'required|integer|min:0',
+        'packaging_date' => 'required|date',
+        'notes' => 'nullable|string|max:1000',
+        'samples' => 'required|array|min:1',
+        'samples.*.sample_weight' => 'required|numeric|min:0.001|max:999999.999',
+        'samples.*.number_of_sets' => 'required|integer|min:1',
+        'samples.*.sample_notes' => 'nullable|string|max:500'
+        // Remove sample_code from validation as it will be internal
+    ]);
+
+    // Validate that selected category type is acceptable for this garden
+    if (!$garden->acceptsInvoiceType($validatedData['category_type'])) {
+        return back()->withErrors(['category_type' => 'Selected category type is not acceptable for this garden.']);
+    }
+
+    // Validate that selected variables are valid for the category type
+    $gardenVariables = $garden->getVariablesForType($validatedData['category_type']);
+    foreach ($validatedData['variables'] as $variable) {
+        if (!in_array($variable, $gardenVariables)) {
+            return back()->withErrors(['variables' => "Variable '{$variable}' is not valid for selected category type."]);
         }
     }
+
+    try {
+        DB::beginTransaction();
+
+        // Create invoice with new fields
+        $invoice = GardenInvoice::create([
+            'garden_id' => $garden->id,
+            'mark_name' => $garden->garden_name,
+            'invoice_prefix' => $validatedData['invoice_prefix'],
+            'invoice_number' => $validatedData['invoice_number'], // Manual invoice number
+            'category_type' => $validatedData['category_type'],
+            'variables' => $validatedData['variables'],
+            'grade' => $validatedData['grade'],
+            'bags_packages' => $validatedData['bags_packages'],
+            'packaging_date' => $validatedData['packaging_date'],
+            'notes' => $validatedData['notes'],
+            'created_by' => auth()->id()
+        ]);
+
+        // Create samples with auto-generated sample codes (internal)
+        foreach ($validatedData['samples'] as $index => $sampleData) {
+            $sampleCode = $this->generateSampleCode($invoice, $index + 1);
+            
+            $invoice->addSample([
+                'sample_code' => $sampleCode, // Auto-generated, hidden from form
+                'sample_weight' => $sampleData['sample_weight'],
+                'number_of_sets' => $sampleData['number_of_sets'],
+                'sample_notes' => $sampleData['sample_notes']
+            ]);
+        }
+
+        $invoice->updateTotalWeight();
+        DB::commit();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice created successfully.',
+                'invoice' => $invoice->load('samples')
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.gardens.invoices.index', $garden)
+            ->with('success', 'Invoice created successfully.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating invoice: ' . $e->getMessage()
+            ], 422);
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors(['error' => 'Error creating invoice: ' . $e->getMessage()]);
+    }
+}
+
+
+/**
+ * Get available grades from garden's category filters
+ */
+private function getAvailableGrades(Garden $garden)
+{
+    $grades = [];
+    
+    if ($garden->category_filters) {
+        foreach ($garden->category_filters as $filter) {
+            if (isset($filter['grade_codes']) && is_array($filter['grade_codes'])) {
+                $grades = array_merge($grades, $filter['grade_codes']);
+            }
+        }
+    }
+    
+    return array_unique($grades);
+}
+
+
+/**
+ * Generate internal sample code
+ */
+private function generateSampleCode(GardenInvoice $invoice, int $sampleNumber)
+{
+    return $invoice->invoice_number . '-S' . str_pad($sampleNumber, 2, '0', STR_PAD_LEFT);
+}
 
     /**
      * Display the specified invoice with samples
