@@ -64,6 +64,8 @@ class Poc extends Model
             'seller' => 'Seller',
             'buyer' => 'Buyer',
             'both' => 'Both',
+            'tester' => 'Tester',
+            'poc' => 'POC',
             default => 'Unknown'
         };
     }
