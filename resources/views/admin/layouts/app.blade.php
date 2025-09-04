@@ -213,6 +213,47 @@
                 padding: 15px;
             }
         }
+
+        .collapsible-menu {
+    background-color: #155724;
+    color: white;
+    border: none;
+    width: 100%;
+    text-align: left;
+    padding: 12px 15px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.collapsible-menu:hover {
+    background-color: #377245;
+}
+
+.submenu {
+    background-color: #495057;
+}
+
+.submenu .nav-link {
+    padding-left: 25px;
+    font-size: 13px;
+}
+
+.submenu .nav-link:hover {
+    background-color: #6c757d;
+}
+
+.collapse-icon {
+    transition: transform 0.3s ease;
+}
+
+.menu-icon {
+    width: 20px;
+    text-align: center;
+    margin-right: 8px;
+}
     </style>
     
     @stack('styles')
@@ -281,7 +322,7 @@
     </a>
 </li>
                         
-                        <li class="nav-item">
+                        {{-- <li class="nav-item">
                             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-light">
                                 <span>Master Data</span>
                             </h6>
@@ -355,7 +396,84 @@
                                 <i class="fas fa-file-contract"></i>
                                 Contracts
                             </a>
-                        </li>
+                        </li> --}}
+
+                        <!-- Collapsible Master Data Menu -->
+                    <li class="nav-item mt-3">
+                        <button class="collapsible-menu" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#masterDataMenu" aria-expanded="true" aria-controls="masterDataMenu">
+                            <span>
+                                <i class="fas fa-database menu-icon"></i>
+                                Master Data
+                            </span>
+                            <i class="fas fa-chevron-up collapse-icon"></i>
+                        </button>
+                        <div class="collapse show" id="masterDataMenu">
+                            <ul class="nav flex-column submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.pocs.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.pocs.index') }}">
+                                        <i class="fas fa-user-tie menu-icon"></i>
+                                        POC Master
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.teas.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.teas.index') }}">
+                                        <i class="fas fa-leaf menu-icon"></i>
+                                        Tea Master
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.gardens.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.gardens.index') }}">
+                                        <i class="fas fa-seedling menu-icon"></i>
+                                        Garden Master
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.billing-companies.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.billing-companies.index') }}">
+                                        <i class="fas fa-building menu-icon"></i>
+                                        Billing Company
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.sellers.index') }}">
+                                        <i class="fas fa-store menu-icon"></i>
+                                        Sellers
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.buyers.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.buyers.index') }}">
+                                        <i class="fas fa-users menu-icon"></i>
+                                        Buyers
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.couriers.*') ? 'active' : '' }}" 
+                                       href="{{ route('admin.couriers.index') }}">
+                                        <i class="fas fa-shipping-fast menu-icon"></i>
+                                        Courier Services
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.logistics.index') }}">
+                                        <i class="fas fa-truck menu-icon"></i>
+                                        Logistic Companies
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('admin.contracts.index') }}">
+                                        <i class="fas fa-file-contract menu-icon"></i>
+                                        Contracts
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
                         
                         <li class="nav-item">
                             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-light">
@@ -593,6 +711,21 @@
                 currency: 'INR'
             }).format(amount);
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+    const collapseButton = document.querySelector('.collapsible-menu');
+    const collapseTarget = document.querySelector('#masterDataMenu');
+    
+    if (collapseButton && collapseTarget) {
+        collapseTarget.addEventListener('show.bs.collapse', function () {
+            collapseButton.querySelector('.collapse-icon').style.transform = 'rotate(0deg)';
+        });
+        
+        collapseTarget.addEventListener('hide.bs.collapse', function () {
+            collapseButton.querySelector('.collapse-icon').style.transform = 'rotate(180deg)';
+        });
+    }
+});
     </script>
 
     @stack('scripts')

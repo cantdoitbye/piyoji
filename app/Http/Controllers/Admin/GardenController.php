@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\BaseAdminController;
+use App\Models\DocumentType as ModelsDocumentType;
+use App\Models\Garden;
+use App\Models\GardenAttachment;
 use App\Models\Poc;
 use App\Services\GardenService;
+use Dom\DocumentType;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 
 class GardenController extends BaseAdminController
 {
@@ -468,5 +473,250 @@ public function debugService()
             'status' => 'boolean',
             'remarks' => 'nullable|string'
         ]);
+    }
+
+
+    /**
+     * Show garden attachment management page
+     */
+    public function manageAttachments(int $id)
+    {
+        try {
+            $garden = Garden::with(['attachments' => function($query) {
+                $query->with(['uploadedByUser', 'verifiedByUser', 'documentType'])->orderBy('created_at', 'desc');
+            }])->findOrFail($id);
+
+            $documentTypes = ModelsDocumentType::getActiveOptions();
+            
+            return view('admin.gardens.manage-attachments', compact('garden', 'documentTypes'));
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.gardens.index')
+                ->with('error', 'Garden not found.');
+        }
+    }
+
+    /**
+     * Upload additional attachments to existing garden
+     */
+    public function uploadAttachments(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'attachments' => 'required|array|max:10',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,bmp,txt|max:10240',
+            'document_type_ids' => 'nullable|array',
+            'document_type_ids.*' => 'nullable|integer|exists:document_types,id',
+            'attachment_descriptions' => 'nullable|array',
+            'attachment_descriptions.*' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $garden = Garden::findOrFail($id);
+            $this->handleFileAttachments($garden, $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Files uploaded successfully.',
+                'attachments_count' => $garden->attachments()->count()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get garden attachments
+     */
+    public function getAttachments(int $id): JsonResponse
+    {
+        try {
+            $garden = Garden::findOrFail($id);
+            $attachments = $garden->attachments()
+                ->with(['uploadedByUser', 'verifiedByUser', 'documentType'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'attachments' => $attachments
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Delete attachment
+     */
+    public function deleteAttachment(int $gardenId, int $attachmentId): JsonResponse
+    {
+        try {
+            $attachment = GardenAttachment::where('garden_id', $gardenId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment deleted successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Download attachment
+     */
+    public function downloadAttachment(int $gardenId, int $attachmentId)
+    {
+        try {
+            $attachment = GardenAttachment::where('garden_id', $gardenId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            if (!Storage::exists($attachment->file_path)) {
+                abort(404, 'File not found');
+            }
+
+            return Storage::download($attachment->file_path, $attachment->file_name);
+
+        } catch (\Exception $e) {
+            abort(404, 'File not found');
+        }
+    }
+
+    /**
+     * Preview attachment
+     */
+    public function previewAttachment(int $gardenId, int $attachmentId)
+    {
+        try {
+            $attachment = GardenAttachment::where('garden_id', $gardenId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            if (!Storage::exists($attachment->file_path)) {
+                abort(404, 'File not found');
+            }
+
+            return response(Storage::get($attachment->file_path))
+                ->header('Content-Type', $attachment->file_type)
+                ->header('Content-Disposition', 'inline; filename="' . $attachment->file_name . '"');
+
+        } catch (\Exception $e) {
+            abort(404, 'File not found');
+        }
+    }
+
+    /**
+     * Verify attachment
+     */
+    public function verifyAttachment(int $gardenId, int $attachmentId): JsonResponse
+    {
+        try {
+            $attachment = GardenAttachment::where('garden_id', $gardenId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->verify();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment verified successfully.',
+                'attachment' => $attachment->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    /**
+     * Update attachment details
+     */
+    public function updateAttachment(Request $request, int $gardenId, int $attachmentId): JsonResponse
+    {
+        $request->validate([
+            'document_type_id' => 'required|integer|exists:document_types,id',
+            'description' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $attachment = GardenAttachment::where('garden_id', $gardenId)
+                ->where('id', $attachmentId)
+                ->firstOrFail();
+
+            $attachment->update([
+                'document_type_id' => $request->document_type_id,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attachment updated successfully.',
+                'attachment' => $attachment->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+
+    /**
+     * Handle multiple file attachments for garden
+     */
+    private function handleFileAttachments(Garden $garden, Request $request)
+    {
+        if (!$request->hasFile('attachments')) {
+            return;
+        }
+
+        $files = $request->file('attachments');
+        $documentTypeIds = $request->input('document_type_ids', []);
+        $descriptions = $request->input('attachment_descriptions', []);
+
+        foreach ($files as $index => $file) {
+            if ($file->isValid()) {
+                // Generate unique filename
+                $filename = time() . '_' . $index . '_' . $file->getClientOriginalName();
+                
+                // Store file in garden-specific directory
+                $path = $file->storeAs('gardens/' . $garden->id . '/attachments', $filename, 'public');
+
+                // Create attachment record
+                GardenAttachment::create([
+                    'garden_id' => $garden->id,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'document_type_id' => $documentTypeIds[$index] ?? null,
+                    'description' => $descriptions[$index] ?? null,
+                    'uploaded_by' => auth()->id()
+                ]);
+            }
+        }
     }
 }

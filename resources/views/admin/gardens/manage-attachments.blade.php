@@ -1,45 +1,45 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Manage Attachments - ' . $buyer->buyer_name)
-@section('subtitle', 'Upload and manage buyer documents')
+@section('title', 'Manage Attachments - ' . $garden->garden_name)
+@section('subtitle', 'Upload and manage garden documents')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.buyers.index') }}">Buyers</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.buyers.show', $buyer->id) }}">{{ $buyer->buyer_name }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.gardens.index') }}">Gardens</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.gardens.show', $garden->id) }}">{{ $garden->garden_name }}</a></li>
     <li class="breadcrumb-item active">Manage Attachments</li>
 @endsection
 
 @section('header-actions')
-    <a href="{{ route('admin.buyers.show', $buyer->id) }}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-1"></i> Back to Buyer
+    <a href="{{ route('admin.gardens.show', $garden->id) }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to Garden
     </a>
 @endsection
 
 @section('content')
-<!-- Buyer Info Card -->
+<!-- Garden Info Card -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card bg-light">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-6">
-                        <h5 class="mb-1">{{ $buyer->buyer_name }}</h5>
+                        <h5 class="mb-1">{{ $garden->garden_name }}</h5>
                         <p class="mb-0 text-muted">
-                            <span class="badge bg-{{ $buyer->buyer_type === 'big' ? 'success' : 'info' }} me-2">
-                                {{ $buyer->buyer_type_text }}
+                            <span class="badge bg-{{ $garden->garden_type === 'garden' ? 'success' : 'info' }} me-2">
+                                {{ $garden->garden_type_text }}
                             </span>
-                            {{ $buyer->contact_person_name }}
+                            {{ $garden->contact_person_name }}
                         </p>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="mb-1">
                             <i class="fas fa-phone text-muted me-1"></i>
-                            {{ $buyer->mobile_no }}
+                            {{ $garden->mobile_no }}
                         </div>
-                        @if($buyer->email)
+                        @if($garden->email)
                         <div class="text-muted">
                             <i class="fas fa-envelope text-muted me-1"></i>
-                            {{ $buyer->email }}
+                            {{ $garden->email }}
                         </div>
                         @endif
                     </div>
@@ -83,7 +83,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="fas fa-paperclip me-2"></i>Attachments
-                    <span class="badge bg-secondary ms-2" id="totalAttachments">{{ $buyer->attachments->count() }}</span>
+                    <span class="badge bg-secondary ms-2" id="totalAttachments">{{ $garden->attachments ? $garden->attachments->count()  : 0 }}</span>
                 </h5>
             </div>
             <div class="card-body" id="attachmentsContainer">
@@ -93,22 +93,22 @@
     </div>
 
     <div class="col-lg-4">
-        <!-- Buyer Summary -->
+        <!-- Garden Summary -->
         <div class="card mb-4">
             <div class="card-header">
-                <h6 class="mb-0">Buyer Summary</h6>
+                <h6 class="mb-0">Garden Summary</h6>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-6 text-center">
                         <div class="mb-2">
-                            <h4 class="text-primary mb-0">{{ $buyer->attachments->count() }}</h4>
+                            <h4 class="text-primary mb-0" id="totalAttachments">{{ $garden->attachments ? $garden->attachments->count() : 0}}</h4>
                             <small class="text-muted">Total Files</small>
                         </div>
                     </div>
                     <div class="col-6 text-center">
                         <div class="mb-2">
-                            <h4 class="text-success mb-0">{{ $buyer->verifiedAttachments->count() }}</h4>
+                            <h4 class="text-success mb-0">{{ $garden->verifiedAttachments ? $garden->verifiedAttachments->count() : 0}}</h4>
                             <small class="text-muted">Verified</small>
                         </div>
                     </div>
@@ -116,14 +116,14 @@
                 <div class="row">
                     <div class="col-6 text-center">
                         <div>
-                            <h4 class="text-warning mb-0">{{ $buyer->unverifiedAttachments->count() }}</h4>
+                            <h4 class="text-warning mb-0">{{ $garden->unverifiedAttachments ? $garden->unverifiedAttachments->count() : 0 }}</h4>
                             <small class="text-muted">Pending</small>
                         </div>
                     </div>
                     <div class="col-6 text-center">
                         <div>
                             <h4 class="text-info mb-0">
-                                {{ number_format($buyer->attachments->sum('file_size') / 1024 / 1024, 1) }} MB
+                                {{ number_format($garden->attachments->sum('file_size') / 1024 / 1024, 1) }} MB
                             </h4>
                             <small class="text-muted">Total Size</small>
                         </div>
@@ -139,7 +139,7 @@
             </div>
             <div class="card-body">
                 @php
-                    $typeGroups = $buyer->attachments->groupBy('document_type_id');
+                    $typeGroups = $garden->attachments->groupBy('document_type_id');
                 @endphp
                 @if($typeGroups->count() > 0)
                     @foreach($typeGroups as $typeId => $attachments)
@@ -191,7 +191,7 @@
 
 @push('scripts')
 <script>
-const buyerId = {{ $buyer->id }};
+const gardenId = {{ $garden->id }};
 let fileIndex = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -221,10 +221,10 @@ function addFileInput() {
                     <select class="form-select" name="document_type_ids[]">
                         <option value="">Select Document Type</option>
                         @foreach($documentTypes as $id => $name)
-                        <option value="{{ $id }}">{{ $name->name }}</option>
+                        <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
                         <option value="add_new" style="color: #007bff; font-weight: bold;">
-                            + Add New Document Type
+                            <i class="fas fa-plus"></i> Add New Document Type
                         </option>
                     </select>
                 </div>
@@ -353,7 +353,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     showLoading();
 
     $.ajax({
-        url: `/admin/buyers/${buyerId}/attachments`,
+        url: `/admin/gardens/${gardenId}/attachments`,
         method: 'POST',
         data: formData,
         processData: false,
@@ -385,7 +385,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
 
 function loadAttachments() {
     $.ajax({
-        url: `/admin/buyers/${buyerId}/attachments`,
+        url: `/admin/gardens/${gardenId}/attachments`,
         method: 'GET',
         success: function(response) {
             if (response.success) {
@@ -470,7 +470,7 @@ function verifyAttachment(attachmentId) {
     if (!confirm('Are you sure you want to verify this attachment?')) return;
     
     $.ajax({
-        url: `/admin/buyers/${buyerId}/attachments/${attachmentId}/verify`,
+        url: `/admin/gardens/${gardenId}/attachments/${attachmentId}/verify`,
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -537,7 +537,7 @@ function editAttachment(attachmentId, currentTypeId, currentDescription) {
         const formData = $(this).serialize();
         
         $.ajax({
-            url: `/admin/buyers/${buyerId}/attachments/${attachmentId}`,
+            url: `/admin/gardens/${gardenId}/attachments/${attachmentId}`,
             method: 'PUT',
             data: formData,
             headers: {
@@ -563,7 +563,7 @@ function deleteAttachment(attachmentId) {
     if (!confirm('Are you sure you want to delete this attachment? This action cannot be undone.')) return;
     
     $.ajax({
-        url: `/admin/buyers/${buyerId}/attachments/${attachmentId}`,
+        url: `/admin/gardens/${gardenId}/attachments/${attachmentId}`,
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -587,7 +587,7 @@ function updateAttachmentCount(count = null) {
     if (count === null) {
         // Reload to get current count
         $.ajax({
-            url: `/admin/buyers/${buyerId}/attachments`,
+            url: `/admin/gardens/${gardenId}/attachments`,
             method: 'GET',
             success: function(response) {
                 if (response.success) {

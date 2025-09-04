@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\BatchEvaluation;
+use App\Models\BatchTesterEvaluation;
+use App\Models\Poc;
 use App\Models\Sample;
 use App\Models\SampleBatch;
 use Illuminate\Support\Facades\DB;
@@ -248,6 +251,250 @@ class BatchService
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
+        }
+    }
+
+    /**
+     * Get batch evaluation statistics
+     */
+    public function getBatchEvaluationStatistics(): array
+    {
+        $totalBatches = SampleBatch::count();
+        $evaluatedBatches = BatchEvaluation::where('evaluation_status', BatchEvaluation::STATUS_COMPLETED)->count();
+        $pendingEvaluations = BatchEvaluation::where('evaluation_status', BatchEvaluation::STATUS_PENDING)->count();
+        $inProgressEvaluations = BatchEvaluation::where('evaluation_status', BatchEvaluation::STATUS_IN_PROGRESS)->count();
+        
+        return [
+            'total_batches' => $totalBatches,
+            'evaluated_batches' => $evaluatedBatches,
+            'pending_evaluations' => $pendingEvaluations,
+            'in_progress_evaluations' => $inProgressEvaluations,
+            'evaluation_completion_rate' => $totalBatches > 0 ? round(($evaluatedBatches / $totalBatches) * 100, 1) : 0
+        ];
+    }
+
+    /**
+     * Get batch evaluation details
+     */
+    public function getBatchEvaluationDetails(int $batchId): BatchEvaluation
+    {
+        return BatchEvaluation::with([
+            'batch',
+            'testerEvaluations.testerPoc',
+            'evaluationStartedBy',
+            'evaluationCompletedBy'
+        ])->where('batch_group_id', $batchId)->firstOrFail();
+    }
+
+    /**
+     * Create batch evaluation
+     */
+    public function createBatchEvaluation(int $batchId, array $evaluationData, int $userId): BatchEvaluation
+    {
+        try {
+            DB::beginTransaction();
+
+            $batch = SampleBatch::findOrFail($batchId);
+
+            // Create batch evaluation
+            $evaluation = BatchEvaluation::create([
+                'batch_group_id' => $batchId,
+                'batch_id' => $batch->batch_number,
+                'evaluation_date' => now()->toDateString(),
+                'total_samples' => $batch->total_samples,
+                'evaluation_status' => BatchEvaluation::STATUS_IN_PROGRESS,
+                'overall_remarks' => $evaluationData['overall_remarks'] ?? null,
+                'evaluation_started_by' => $userId,
+                'evaluation_started_at' => now(),
+                'created_by' => $userId,
+                'updated_by' => $userId
+            ]);
+
+            // Create tester evaluations
+            foreach ($evaluationData['testers'] as $testerData) {
+                $tester = Poc::findOrFail($testerData['tester_poc_id']);
+                
+                BatchTesterEvaluation::create([
+                    'batch_evaluation_id' => $evaluation->id,
+                    'tester_poc_id' => $tester->id,
+                    'tester_name' => $tester->poc_name,
+                    'c_score' => $testerData['c_score'],
+                    't_score' => $testerData['t_score'],
+                    's_score' => $testerData['s_score'],
+                    'b_score' => $testerData['b_score'],
+                    'total_samples' => $testerData['total_samples'],
+                    'color_shade' => $testerData['color_shade'] ?? 'RED',
+                    'brand' => $testerData['brand'] ?? 'WB',
+                    'remarks' => $testerData['remarks'] ?? 'NORMAL',
+                    'evaluation_status' => BatchTesterEvaluation::STATUS_COMPLETED,
+                    'evaluated_at' => now(),
+                    'created_by' => $userId,
+                    'updated_by' => $userId
+                ]);
+            }
+
+            // Complete the evaluation
+            $evaluation->update([
+                'evaluation_status' => BatchEvaluation::STATUS_COMPLETED,
+                'evaluation_completed_by' => $userId,
+                'evaluation_completed_at' => now(),
+                'updated_by' => $userId
+            ]);
+
+            // Update batch status based on evaluation results
+            $this->updateBatchStatusFromEvaluation($batch, $evaluation);
+
+            DB::commit();
+            return $evaluation;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Update batch evaluation
+     */
+    public function updateBatchEvaluation(int $evaluationId, array $evaluationData, int $userId): BatchEvaluation
+    {
+        try {
+            DB::beginTransaction();
+
+            $evaluation = BatchEvaluation::findOrFail($evaluationId);
+            
+            // Update evaluation
+            $evaluation->update([
+                'overall_remarks' => $evaluationData['overall_remarks'] ?? null,
+                'evaluation_completed_by' => $userId,
+                'evaluation_completed_at' => now(),
+                'updated_by' => $userId
+            ]);
+
+            // Delete existing tester evaluations
+            BatchTesterEvaluation::where('batch_evaluation_id', $evaluationId)->delete();
+
+            // Create new tester evaluations
+            foreach ($evaluationData['testers'] as $testerData) {
+                $tester = Poc::findOrFail($testerData['tester_poc_id']);
+                
+                BatchTesterEvaluation::create([
+                    'batch_evaluation_id' => $evaluation->id,
+                    'tester_poc_id' => $tester->id,
+                    'tester_name' => $tester->poc_name,
+                    'c_score' => $testerData['c_score'],
+                    't_score' => $testerData['t_score'],
+                    's_score' => $testerData['s_score'],
+                    'b_score' => $testerData['b_score'],
+                    'total_samples' => $testerData['total_samples'],
+                    'color_shade' => $testerData['color_shade'] ?? 'RED',
+                    'brand' => $testerData['brand'] ?? 'WB',
+                    'remarks' => $testerData['remarks'] ?? 'NORMAL',
+                    'evaluation_status' => BatchTesterEvaluation::STATUS_COMPLETED,
+                    'evaluated_at' => now(),
+                    'created_by' => $userId,
+                    'updated_by' => $userId
+                ]);
+            }
+
+            // Update batch status based on evaluation results
+            $batch = $evaluation->batch;
+            $this->updateBatchStatusFromEvaluation($batch, $evaluation);
+
+            DB::commit();
+            return $evaluation->fresh(['testerEvaluations.testerPoc']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Get evaluation report data
+     */
+    public function getEvaluationReport(array $filters = []): array
+    {
+        $query = BatchEvaluation::with([
+            'batch',
+            'testerEvaluations.testerPoc',
+            'evaluationStartedBy',
+            'evaluationCompletedBy'
+        ]);
+
+        // Apply filters
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('evaluation_date', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('evaluation_date', '<=', $filters['end_date']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('evaluation_status', $filters['status']);
+        }
+
+        if (!empty($filters['tester_id'])) {
+            $query->whereHas('testerEvaluations', function ($q) use ($filters) {
+                $q->where('tester_poc_id', $filters['tester_id']);
+            });
+        }
+
+        $evaluations = $query->orderBy('evaluation_date', 'desc')->get();
+
+        // Calculate statistics
+        $statistics = [
+            'total_evaluations' => $evaluations->count(),
+            'completed_evaluations' => $evaluations->where('evaluation_status', BatchEvaluation::STATUS_COMPLETED)->count(),
+            'average_total_score' => $evaluations->avg(function ($evaluation) {
+                $scores = $evaluation->average_scores;
+                return $scores['c_score'] + $scores['t_score'] + $scores['s_score'] + $scores['b_score'];
+            }),
+            'accepted_batches' => $evaluations->filter(function ($evaluation) {
+                return $evaluation->batch_acceptance === 'Accepted';
+            })->count(),
+            'normal_batches' => $evaluations->filter(function ($evaluation) {
+                return $evaluation->batch_acceptance === 'Normal';
+            })->count(),
+            'rejected_batches' => $evaluations->filter(function ($evaluation) {
+                return $evaluation->batch_acceptance === 'Rejected';
+            })->count()
+        ];
+
+        return [
+            'evaluations' => $evaluations,
+            'statistics' => $statistics,
+            'filters' => $filters
+        ];
+    }
+
+    /**
+     * Update batch status based on evaluation results
+     */
+    private function updateBatchStatusFromEvaluation(SampleBatch $batch, BatchEvaluation $evaluation): void
+    {
+        $averageScores = $evaluation->average_scores;
+        $totalScore = $averageScores['c_score'] + $averageScores['t_score'] + 
+                     $averageScores['s_score'] + $averageScores['b_score'];
+        
+        // Update batch status based on evaluation result
+        if ($totalScore >= 300) {
+            $batch->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'updated_by' => auth()->id()
+            ]);
+        } elseif ($totalScore >= 200) {
+            $batch->update([
+                'status' => 'processing',
+                'updated_by' => auth()->id()
+            ]);
+        } else {
+            $batch->update([
+                'status' => 'processing', // Keep as processing for rejected batches for potential re-evaluation
+                'updated_by' => auth()->id()
+            ]);
         }
     }
 }

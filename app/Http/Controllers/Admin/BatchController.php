@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BatchEvaluation;
+use App\Models\BatchTesterEvaluation;
+use App\Models\Poc;
 use App\Services\BatchService;
 use App\Models\SampleBatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class BatchController extends Controller
 {
@@ -290,6 +294,171 @@ class BatchController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+
+
+    /**
+     * Show batch evaluation form
+     */
+    public function showEvaluationForm(int $id)
+    {
+        try {
+            $batch = SampleBatch::with(['samples'])->findOrFail($id);
+            
+            // Check if batch has samples
+            if ($batch->total_samples == 0) {
+                return redirect()->route('admin.batches.index')
+                    ->with('error', 'This batch has no samples to evaluate.');
+            }
+
+            // Get existing evaluation if any
+            $evaluation = BatchEvaluation::where('batch_group_id', $id)->first();
+            
+            // Get testers from POCs where poc_type is 'tester'
+            $testers = Poc::where('poc_type', 'tester')
+                         ->where('status', true)
+                         ->orderBy('poc_name')
+                         ->get();
+            
+            return view('admin.batches.evaluation', compact('batch', 'evaluation', 'testers'));
+            
+        } catch (\Exception $e) {
+            return redirect()->route('admin.batches.index')
+                ->with('error', 'Batch not found: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store batch evaluation
+     */
+    public function storeEvaluation(Request $request, int $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'testers' => 'required|array|min:1',
+            'testers.*.tester_poc_id' => 'required|exists:pocs,id',
+            'testers.*.c_score' => 'required|integer|min:0|max:100',
+            'testers.*.t_score' => 'required|integer|min:0|max:100',
+            'testers.*.s_score' => 'required|integer|min:0|max:100',
+            'testers.*.b_score' => 'required|integer|min:0|max:100',
+            'testers.*.total_samples' => 'required|integer|min:1',
+            'testers.*.color_shade' => 'nullable|string',
+            'testers.*.brand' => 'nullable|string',
+            'testers.*.remarks' => 'nullable|string',
+            'overall_remarks' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $batch = SampleBatch::findOrFail($id);
+            
+            // Create or update batch evaluation
+            $evaluation = BatchEvaluation::updateOrCreate(
+                ['batch_group_id' => $id],
+                [
+                    'batch_id' => $batch->batch_number,
+                    'evaluation_date' => now()->toDateString(),
+                    'total_samples' => $batch->total_samples,
+                    'evaluation_status' => BatchEvaluation::STATUS_IN_PROGRESS,
+                    'overall_remarks' => $request->overall_remarks,
+                    'evaluation_started_by' => Auth::id(),
+                    'evaluation_started_at' => now(),
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id()
+                ]
+            );
+
+            // Delete existing tester evaluations
+            BatchTesterEvaluation::where('batch_evaluation_id', $evaluation->id)->delete();
+
+            // Create new tester evaluations
+            foreach ($request->testers as $testerData) {
+                $tester = Poc::findOrFail($testerData['tester_poc_id']);
+                
+                BatchTesterEvaluation::create([
+                    'batch_evaluation_id' => $evaluation->id,
+                    'tester_poc_id' => $tester->id,
+                    'tester_name' => $tester->poc_name,
+                    'c_score' => $testerData['c_score'],
+                    't_score' => $testerData['t_score'],
+                    's_score' => $testerData['s_score'],
+                    'b_score' => $testerData['b_score'],
+                    'total_samples' => $testerData['total_samples'],
+                    'color_shade' => $testerData['color_shade'] ?? 'RED',
+                    'brand' => $testerData['brand'] ?? 'WB',
+                    'remarks' => $testerData['remarks'],
+                    'evaluation_status' => BatchTesterEvaluation::STATUS_COMPLETED,
+                    'evaluated_at' => now(),
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id()
+                ]);
+            }
+
+            // Update evaluation status to completed
+            $evaluation->update([
+                'evaluation_status' => BatchEvaluation::STATUS_COMPLETED,
+                'evaluation_completed_by' => Auth::id(),
+                'evaluation_completed_at' => now(),
+                'updated_by' => Auth::id()
+            ]);
+
+            // Update batch status based on evaluation results
+            $this->updateBatchStatusFromEvaluation($batch, $evaluation);
+
+            DB::commit();
+
+            return redirect()->route('admin.batches.show', $id)
+                ->with('success', 'Batch evaluation completed successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Error saving evaluation: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show batch evaluation results
+     */
+    public function showEvaluationResults(int $id)
+    {
+        try {
+            $batch = SampleBatch::findOrFail($id);
+            $evaluation = BatchEvaluation::with(['testerEvaluations.testerPoc'])
+                                       ->where('batch_group_id', $id)
+                                       ->firstOrFail();
+            
+            return view('admin.batches.evaluation-results', compact('batch', 'evaluation'));
+            
+        } catch (\Exception $e) {
+            return redirect()->route('admin.batches.index')
+                ->with('error', 'Batch evaluation not found: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update batch status based on evaluation results
+     */
+    private function updateBatchStatusFromEvaluation(SampleBatch $batch, BatchEvaluation $evaluation)
+    {
+        $averageScores = $evaluation->average_scores;
+        $totalScore = $averageScores['c_score'] + $averageScores['t_score'] + 
+                     $averageScores['s_score'] + $averageScores['b_score'];
+        
+        // Update batch status based on evaluation result
+        if ($totalScore >= 300) {
+            $batch->update(['status' => 'completed']);
+        } else {
+            $batch->update(['status' => 'processing']);
         }
     }
 }

@@ -184,6 +184,7 @@
                                 <th>Status</th>
                                 <th>Created By</th>
                                 <th>Created At</th>
+                                <th>Evaluation</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -232,12 +233,55 @@
                                     {{ $batch->created_at->format('M d, Y H:i') }}
                                 </td>
                                 <td>
+    @php
+        $evaluation = \App\Models\BatchEvaluation::where('batch_group_id', $batch->id)->first();
+    @endphp
+    
+    @if($evaluation)
+        <span class="badge {{ $evaluation->status_badge_class }}">
+            {{ $evaluation->status_label }}
+        </span>
+        @if($evaluation->isCompleted())
+            <br><small class="text-muted">
+                {{ $evaluation->evaluation_completed_at->format('M d, H:i') }}
+            </small>
+        @endif
+    @else
+        @if($batch->total_samples > 0)
+            <span class="badge bg-secondary">Not Started</span>
+        @else
+            <span class="text-muted">-</span>
+        @endif
+    @endif
+</td>
+                                <td>
                                     <div class="btn-group" role="group">
                                         <a href="{{ route('admin.batches.show', $batch->id) }}" 
                                            class="btn btn-sm btn-outline-primary" 
                                            title="View Batch Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
+
+                                          <!-- Evaluation Button -->
+        @if($batch->total_samples > 0)
+            @php
+                $hasEvaluation = \App\Models\BatchEvaluation::where('batch_group_id', $batch->id)->exists();
+            @endphp
+            
+            @if($hasEvaluation)
+                <!-- View Evaluation Results -->
+                <a href="{{ route('admin.batches.evaluation-results', $batch->id) }}" 
+                   class="btn btn-outline-success btn-sm" title="View Evaluation Results">
+                    <i class="fas fa-chart-line"></i>
+                </a>
+            @else
+                <!-- Start Evaluation -->
+                <a href="{{ route('admin.batches.evaluation-form', $batch->id) }}" 
+                   class="btn btn-outline-warning btn-sm" title="Start Batch Evaluation">
+                    <i class="fas fa-clipboard-check"></i>
+                </a>
+            @endif
+        @endif
                                         
                                         @if($batch->status !== 'completed')
                                         <button type="button" 

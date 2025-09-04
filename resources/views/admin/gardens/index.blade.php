@@ -252,6 +252,10 @@
            data-bs-toggle="tooltip" title="Manage Invoices">
             <i class="fas fa-file-invoice"></i>
         </a>
+
+          <a href="{{ route('admin.gardens.manage-attachments', $garden) }}" class="btn btn-outline-info" title="Manage Attachments">
+            <i class="fas fa-paperclip"></i>
+          </a>
                                         <button type="button" class="btn btn-outline-{{ $garden->status ? 'warning' : 'success' }}"
                                                 onclick="toggleStatus({{ $garden->id }}, {{ $garden->status ? 'false' : 'true' }})"
                                                 title="{{ $garden->status ? 'Deactivate' : 'Activate' }}">

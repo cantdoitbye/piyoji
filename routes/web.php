@@ -252,6 +252,13 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
     Route::get('export', [App\Http\Controllers\Admin\BatchController::class, 'export'])->name('export');
     Route::get('overview-data', [App\Http\Controllers\Admin\BatchController::class, 'getOverviewData'])->name('overview-data');
     Route::get('{id}/export-samples', [App\Http\Controllers\Admin\BatchController::class, 'exportBatchSamples'])->name('export-samples');
+
+    // Add these routes inside the batches route group in web.php
+    
+    // Batch evaluation routes
+    Route::get('{id}/evaluation', [App\Http\Controllers\Admin\BatchController::class, 'showEvaluationForm'])->name('evaluation-form');
+    Route::post('{id}/evaluation', [App\Http\Controllers\Admin\BatchController::class, 'storeEvaluation'])->name('store-evaluation');
+    Route::get('{id}/evaluation-results', [App\Http\Controllers\Admin\BatchController::class, 'showEvaluationResults'])->name('evaluation-results');
 });
 
      Route::resource('pocs', App\Http\Controllers\Admin\PocController::class);
@@ -266,9 +273,28 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
     Route::patch('gardens/{id}/toggle-status', [App\Http\Controllers\Admin\GardenController::class, 'toggleStatus'])->name('gardens.toggle-status');
     
 
+      Route::group(['prefix' => 'gardens'], function () {
+        Route::get('{id}/manage-attachments', [App\Http\Controllers\Admin\GardenController::class, 'manageAttachments'])
+            ->name('gardens.manage-attachments');
+        Route::post('{id}/attachments', [App\Http\Controllers\Admin\GardenController::class, 'uploadAttachments'])
+            ->name('gardens.upload-attachments');
+        Route::get('{id}/attachments', [App\Http\Controllers\Admin\GardenController::class, 'getAttachments'])
+            ->name('gardens.get-attachments');
+        Route::delete('{gardenId}/attachments/{attachmentId}', [App\Http\Controllers\Admin\GardenController::class, 'deleteAttachment'])
+            ->name('gardens.delete-attachment');
+        Route::get('{gardenId}/attachments/{attachmentId}/download', [App\Http\Controllers\Admin\GardenController::class, 'downloadAttachment'])
+            ->name('gardens.attachments.download');
+        Route::get('{gardenId}/attachments/{attachmentId}/preview', [App\Http\Controllers\Admin\GardenController::class, 'previewAttachment'])
+            ->name('gardens.attachments.preview');
+        Route::post('{gardenId}/attachments/{attachmentId}/verify', [App\Http\Controllers\Admin\GardenController::class, 'verifyAttachment'])
+            ->name('gardens.verify-attachment');
+        Route::put('{gardenId}/attachments/{attachmentId}', [App\Http\Controllers\Admin\GardenController::class, 'updateAttachment'])
+            ->name('gardens.update-attachment');
+    });
     
     // Garden Invoice Management Routes
     Route::group(['prefix' => 'gardens/{garden}'], function () {
+        
         
         // Invoice CRUD routes
         Route::get('/invoices', [GardenInvoiceController::class, 'index'])
@@ -391,6 +417,12 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
 
         Route::post('{id}/add-to-sales-register', [SampleController::class, 'addToSalesRegister'])->name('samples.add-to-sales-register');
     });
+
+      Route::resource('document-types', App\Http\Controllers\Admin\DocumentTypeController::class);
+    Route::patch('document-types/{documentType}/toggle-status', [App\Http\Controllers\Admin\DocumentTypeController::class, 'toggleStatus'])
+        ->name('document-types.toggle-status');
+    Route::get('document-types-active', [App\Http\Controllers\Admin\DocumentTypeController::class, 'getActive'])
+        ->name('document-types.active');
 });
 
 /*

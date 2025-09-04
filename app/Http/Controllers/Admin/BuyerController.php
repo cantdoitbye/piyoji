@@ -364,8 +364,8 @@ public function manageAttachments(int $id)
             $query->with(['uploadedByUser', 'verifiedByUser'])->orderBy('created_at', 'desc');
         }])->findOrFail($id);
 
-        $documentTypes = BuyerAttachment::getDocumentTypeOptions();
-        
+        // $documentTypes = BuyerAttachment::getDocumentTypeOptions();
+        $documentTypes = \App\Models\DocumentType::where('status', true)->orderBy('sort_order')->get();
         return view('admin.buyers.manage-attachments', compact('buyer', 'documentTypes'));
 
     } catch (\Exception $e) {

@@ -95,6 +95,13 @@ class Garden extends Model
     }
 
 
+     // Attachment relationships
+    public function attachments()
+    {
+        return $this->hasMany(GardenAttachment::class);
+    }
+
+
    public static function getInvoiceTypesOptions()
 {
     return [

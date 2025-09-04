@@ -6,18 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
-class BuyerAttachment extends Model
+class GardenAttachment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'buyer_id',
+        'garden_id',
         'file_name',
         'file_path',
         'file_type',
         'file_size',
         'document_type_id',
-        'document_type',
         'description',
         'uploaded_by',
         'is_verified',
@@ -31,24 +30,13 @@ class BuyerAttachment extends Model
         'file_size' => 'integer'
     ];
 
-    // Constants for document types
-    const DOCUMENT_TYPES = [
-        'license' => 'Business License',
-        'agreement' => 'Agreement',
-        'certificate' => 'Certificate',
-        'registration' => 'Registration Document',
-        'tax_document' => 'Tax Document',
-        'bank_statement' => 'Bank Statement',
-        'other' => 'Other Document'
-    ];
-
     // Relationships
-    public function buyer()
+    public function garden()
     {
-        return $this->belongsTo(Buyer::class);
+        return $this->belongsTo(Garden::class);
     }
 
-      public function documentType()
+    public function documentType()
     {
         return $this->belongsTo(DocumentType::class);
     }
@@ -92,7 +80,7 @@ class BuyerAttachment extends Model
         return round($size, 2) . ' ' . $units[$i];
     }
 
-     public function getDocumentTypeTextAttribute()
+    public function getDocumentTypeTextAttribute()
     {
         return $this->documentType ? $this->documentType->name : 'Unknown';
     }
@@ -109,8 +97,8 @@ class BuyerAttachment extends Model
 
     public function getDownloadUrlAttribute()
     {
-        return route('admin.buyers.attachments.download', [
-            'buyer' => $this->buyer_id,
+        return route('admin.gardens.attachments.download', [
+            'garden' => $this->garden_id,
             'attachment' => $this->id
         ]);
     }
@@ -118,8 +106,8 @@ class BuyerAttachment extends Model
     public function getPreviewUrlAttribute()
     {
         if ($this->is_image || $this->is_pdf) {
-            return route('admin.buyers.attachments.preview', [
-                'buyer' => $this->buyer_id,
+            return route('admin.gardens.attachments.preview', [
+                'garden' => $this->garden_id,
                 'attachment' => $this->id
             ]);
         }
@@ -158,11 +146,6 @@ class BuyerAttachment extends Model
     }
 
     // Static methods
-    public static function getDocumentTypeOptions()
-    {
-        return self::DOCUMENT_TYPES;
-    }
-
     public static function getAllowedMimeTypes()
     {
         return [
