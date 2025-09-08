@@ -151,6 +151,11 @@ class RepositoryServiceProvider extends ServiceProvider
             $app->make(BuyerRepositoryInterface::class)
         );
     });
+
+     $this->app->bind(
+        \App\Repositories\Interfaces\OfferListRepositoryInterface::class,
+        \App\Repositories\OfferListRepository::class
+    );
     }
 
     public function boot()

@@ -480,7 +480,12 @@
                                 <span>Sample Management</span>
                             </h6>
                         </li>
-                        
+
+                        <li class="nav-item">
+    <a href="{{ route('admin.offer-lists.index') }}" class="nav-link">
+        <i class="fas fa-list"></i> Offer Lists
+    </a>
+</li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('admin.samples.index') }}">
                                 <i class="fas fa-flask"></i>

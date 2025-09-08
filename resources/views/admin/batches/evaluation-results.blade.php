@@ -242,7 +242,7 @@
                         
                         @if($evaluation->testerEvaluations->isEmpty())
                         <tr>
-                            <td colspan="11" class="text-center text-muted py-4">
+                            <td colspan="8" class="text-center text-muted py-4">
                                 <i class="fas fa-clipboard-list fa-2x mb-2"></i>
                                 <br>No tester evaluations found.
                             </td>

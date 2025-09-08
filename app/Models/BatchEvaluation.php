@@ -143,6 +143,20 @@ class BatchEvaluation extends Model
     }
 
     /**
+     * Get average scores in C-T-S-B format
+     */
+    public function getAverageScoreResultAttribute(): string
+    {
+        $averageScores = $this->average_scores;
+        $cAvg = round($averageScores['c_score'], 1);
+        $tAvg = round($averageScores['t_score'], 1);
+        $sAvg = round($averageScores['s_score'], 1);
+        $bAvg = round($averageScores['b_score'], 1);
+        
+        return "{$cAvg}-{$tAvg}-{$sAvg}-{$bAvg}";
+    }
+
+    /**
      * Calculate overall batch acceptance status
      */
     public function getBatchAcceptanceAttribute(): string

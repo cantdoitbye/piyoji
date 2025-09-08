@@ -68,6 +68,14 @@ class BatchTesterEvaluation extends Model
     }
 
     /**
+     * Get score result in C-T-S-B format
+     */
+    public function getScoreResultAttribute(): string
+    {
+        return "{$this->c_score}-{$this->t_score}-{$this->s_score}-{$this->b_score}";
+    }
+
+    /**
      * Calculate total score
      */
     public function getTotalScoreAttribute(): int

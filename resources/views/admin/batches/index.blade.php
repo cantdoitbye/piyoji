@@ -185,6 +185,7 @@
                                 <th>Created By</th>
                                 <th>Created At</th>
                                 <th>Evaluation</th>
+                                <th>Average Score (C-T-S-B)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -252,6 +253,30 @@
         @else
             <span class="text-muted">-</span>
         @endif
+    @endif
+</td>
+
+<td>
+    @if($evaluation && $evaluation->isCompleted())
+        <span class="fw-bold font-monospace text-primary">
+            {{ $evaluation->average_score_result }}
+        </span>
+        <br>
+        @php
+            $averageScores = $evaluation->average_scores;
+            $totalScore = $averageScores['c_score'] + $averageScores['t_score'] + $averageScores['s_score'] + $averageScores['b_score'];
+        @endphp
+        <small class="text-muted">Total: {{ number_format($totalScore, 1) }}</small>
+        <br>
+        <span class="badge 
+            @if($totalScore >= 300) bg-success
+            @elseif($totalScore >= 200) bg-warning  
+            @else bg-danger
+            @endif">
+            {{ $evaluation->batch_acceptance }}
+        </span>
+    @else
+        <span class="text-muted">-</span>
     @endif
 </td>
                                 <td>

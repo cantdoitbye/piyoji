@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\{
     CourierController,
     GardenInvoiceController,
     LogisticCompanyController,
+    OfferListController,
     SampleController,
     TeaController,
     UserController
@@ -423,6 +424,17 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
         ->name('document-types.toggle-status');
     Route::get('document-types-active', [App\Http\Controllers\Admin\DocumentTypeController::class, 'getActive'])
         ->name('document-types.active');
+
+
+         Route::resource('offer-lists', OfferListController::class)->except(['show']);
+    
+    Route::controller(OfferListController::class)->group(function () {
+        Route::get('offer-lists/{id}', 'show')->name('offer-lists.show');
+        Route::get('offer-lists-import/form', 'importForm')->name('offer-lists.import.form');
+        Route::post('offer-lists-import', 'import')->name('offer-lists.import');
+        Route::get('offer-lists-export', 'export')->name('offer-lists.export');
+        Route::get('offer-lists-template/download', 'downloadTemplate')->name('offer-lists.template');
+    });
 });
 
 /*
