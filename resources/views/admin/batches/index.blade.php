@@ -185,7 +185,7 @@
                                 <th>Created By</th>
                                 <th>Created At</th>
                                 <th>Evaluation</th>
-                                <th>Average Score (C-T-S-B)</th>
+                                <th>C-T-S-B</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -288,7 +288,7 @@
                                         </a>
 
                                           <!-- Evaluation Button -->
-        @if($batch->total_samples > 0)
+        {{-- @if($batch->total_samples > 0)
             @php
                 $hasEvaluation = \App\Models\BatchEvaluation::where('batch_group_id', $batch->id)->exists();
             @endphp
@@ -306,7 +306,19 @@
                     <i class="fas fa-clipboard-check"></i>
                 </a>
             @endif
-        @endif
+        @endif --}}
+
+          {{-- Add this new batch testing button --}}
+    @if($batch->total_samples > 0 && $batch->status !== 'completed')
+    <button type="button" 
+            class="btn btn-sm btn-outline-success batch-testing-btn" 
+            data-batch-id="{{ $batch->id }}"
+            data-batch-name="{{ $batch->batch_number }}"
+            data-total-samples="{{ $batch->total_samples }}"
+            title="Start Batch Testing">
+        <i class="fas fa-flask"></i>
+    </button>
+    @endif
                                         
                                         @if($batch->status !== 'completed')
                                         <button type="button" 
@@ -400,6 +412,35 @@
     </div>
 </div>
 
+
+<div class="modal fade" id="batchTestingModal" tabindex="-1" aria-labelledby="batchTestingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchTestingModalLabel">
+                    <i class="fas fa-flask me-2"></i>Initiate Batch Testing
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="batchTestingContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading batch information...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="batchTestingFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="initiateBatchTestingBtn" style="display: none;">
+                    <i class="fas fa-play me-1"></i>Start Testing
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -409,36 +450,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadStatsBtn = document.getElementById('loadBatchStats');
     const createBatchesBtn = document.getElementById('createBatchesBtn');
     const batchStatistics = document.getElementById('batchStatistics');
+  let currentBatchId = null;
+    let selectedTesters = [];
 
     // Load batch statistics
-    loadStatsBtn.addEventListener('click', function() {
-        const date = batchDateInput.value;
-        if (!date) {
-            alert('Please select a date first.');
-            return;
-        }
+    // loadStatsBtn.addEventListener('click', function() {
+    //     const date = batchDateInput.value;
+    //     if (!date) {
+    //         alert('Please select a date first.');
+    //         return;
+    //     }
 
-        this.disabled = true;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+    //     this.disabled = true;
+    //     this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
 
-        fetch(`{{ route('admin.batches.date-statistics') }}?date=${date}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayBatchStatistics(data.data);
-                } else {
-                    alert('Error loading statistics: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error loading statistics. Please try again.');
-            })
-            .finally(() => {
-                this.disabled = false;
-                this.innerHTML = '<i class="fas fa-search me-1"></i>Check Statistics';
-            });
-    });
+    //     fetch(`{{ route('admin.batches.date-statistics') }}?date=${date}`)
+    //         .then(response => response.json())
+    //         .then(data => {
+    //             if (data.success) {
+    //                 displayBatchStatistics(data.data);
+    //             } else {
+    //                 alert('Error loading statistics: ' + data.message);
+    //             }
+    //         })
+    //         .catch(error => {
+    //             console.error('Error:', error);
+    //             alert('Error loading statistics. Please try again.');
+    //         })
+    //         .finally(() => {
+    //             this.disabled = false;
+    //             this.innerHTML = '<i class="fas fa-search me-1"></i>Check Statistics';
+    //         });
+    // });
 
     // Create batches
     createBatchesBtn.addEventListener('click', function() {
@@ -518,6 +561,225 @@ document.addEventListener('DOMContentLoaded', function() {
     if (batchDateInput.value === '{{ date("Y-m-d") }}') {
         loadStatsBtn.click();
     }
+
+     // Handle batch testing button clicks
+    document.querySelectorAll('.batch-testing-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            currentBatchId = this.dataset.batchId;
+            const batchName = this.dataset.batchName;
+            const totalSamples = this.dataset.totalSamples;
+            
+            // Update modal title
+            document.getElementById('batchTestingModalLabel').innerHTML = 
+                `<i class="fas fa-flask me-2"></i>Initiate Testing for ${batchName}`;
+            
+            // Load batch testing data
+            loadBatchTestingData(currentBatchId);
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('batchTestingModal')).show();
+        });
+    });
+
+    // Load batch testing data
+    function loadBatchTestingData(batchId) {
+        const content = document.getElementById('batchTestingContent');
+        const footer = document.getElementById('batchTestingFooter');
+        const initiateBtn = document.getElementById('initiateBatchTestingBtn');
+        
+        fetch(`/admin/batches/${batchId}/initiate-testing`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderBatchTestingForm(data.data);
+                    initiateBtn.style.display = 'inline-block';
+                } else {
+                    if (data.redirect_url) {
+                        // Testing session already exists, redirect to testing page
+                        window.location.href = data.redirect_url;
+                        return;
+                    }
+                    content.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            ${data.message}
+                        </div>
+                    `;
+                    initiateBtn.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading batch data:', error);
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading batch information. Please try again.
+                    </div>
+                `;
+                initiateBtn.style.display = 'none';
+            });
+    }
+
+    // Render batch testing form
+    function renderBatchTestingForm(data) {
+        const { batch, testers } = data;
+        
+        let testersHtml = '';
+        if (testers && testers.length > 0) {
+            testersHtml = testers.map(tester => `
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input tester-checkbox" type="checkbox" 
+                           value="${tester.id}" id="tester_${tester.id}">
+                    <label class="form-check-label" for="tester_${tester.id}">
+                        ${tester.poc_name}
+                        ${tester.designation ? `<small class="text-muted">(${tester.designation})</small>` : ''}
+                    </label>
+                </div>
+            `).join('');
+        } else {
+            testersHtml = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No testers found. Please add testers in POC management first.
+                </div>
+            `;
+        }
+
+        const content = document.getElementById('batchTestingContent');
+        content.innerHTML = `
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Batch Information</h6>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <strong>Batch ID:</strong> ${batch.batch_number}<br>
+                                <strong>Total Samples:</strong> ${batch.total_samples}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Created:</strong> ${new Date(batch.created_at).toLocaleDateString()}<br>
+                                <strong>Status:</strong> ${batch.status}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12">
+                    <h6><i class="fas fa-users me-2"></i>Select Testers <span class="text-danger">*</span></h6>
+                    <div class="border rounded p-3">
+                        ${testersHtml}
+                    </div>
+                    <small class="form-text text-muted">
+                        Select at least one tester to conduct the batch testing.
+                    </small>
+                </div>
+                
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h6>
+                        <ul class="mb-0">
+                            <li>Each sample will be tested individually with the same testers</li>
+                            <li>You can navigate between samples during testing</li>
+                            <li>All four scores (C, T, S, B) must be provided for each sample</li>
+                            <li>The session can be paused and resumed later</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners for tester checkboxes
+        document.querySelectorAll('.tester-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedTesters);
+        });
+    }
+
+    // Update selected testers array
+    function updateSelectedTesters() {
+        selectedTesters = Array.from(document.querySelectorAll('.tester-checkbox:checked'))
+                              .map(checkbox => parseInt(checkbox.value));
+        
+        const initiateBtn = document.getElementById('initiateBatchTestingBtn');
+        initiateBtn.disabled = selectedTesters.length === 0;
+        
+        if (selectedTesters.length === 0) {
+            initiateBtn.innerHTML = '<i class="fas fa-play me-1"></i>Select Testers First';
+        } else {
+            initiateBtn.innerHTML = `<i class="fas fa-play me-1"></i>Start Testing (${selectedTesters.length} tester${selectedTesters.length > 1 ? 's' : ''})`;
+        }
+    }
+
+    // Handle initiate testing button click
+    document.getElementById('initiateBatchTestingBtn').addEventListener('click', function() {
+        if (selectedTesters.length === 0) {
+            alert('Please select at least one tester.');
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Initiating...';
+
+        const formData = {
+            testers: selectedTesters,
+            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        };
+
+        fetch(`/admin/batches/${currentBatchId}/initiate-testing`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': formData._token
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and redirect to testing page
+                bootstrap.Modal.getInstance(document.getElementById('batchTestingModal')).hide();
+                
+                // Show success message and redirect
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').firstChild);
+                
+                // Redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
+            } else {
+                alert(`Error: ${data.message}`);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-play me-1"></i>Start Testing';
+            }
+        })
+        .catch(error => {
+            console.error('Error initiating testing:', error);
+            alert('Error initiating testing session. Please try again.');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-play me-1"></i>Start Testing';
+        });
+    });
+
+    // Reset modal when closed
+    document.getElementById('batchTestingModal').addEventListener('hidden.bs.modal', function() {
+        currentBatchId = null;
+        selectedTesters = [];
+        document.getElementById('batchTestingContent').innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading batch information...</p>
+            </div>
+        `;
+        document.getElementById('initiateBatchTestingBtn').style.display = 'none';
+    });
 });
 
 // Function to update batch status
@@ -571,6 +833,8 @@ function deleteBatch(batchId) {
         console.error('Error:', error);
         alert('Error deleting batch. Please try again.');
     });
+
+   
 }
 </script>
 @endpush

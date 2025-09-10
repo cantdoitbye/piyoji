@@ -82,6 +82,25 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label for="poc_type" class="form-label">
+                                 Type <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select @error('type') is-invalid @enderror" 
+                                    id="type" name="type" required>
+                                <option value="">Select POC Type</option>
+                                @foreach($types as $value => $label)
+                                    <option value="{{ $value }}" 
+                                            {{ old('type', $poc->type ?? '') == $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('poc_type')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                         
                         <div class="col-md-6 mb-3">
                             <label for="poc_type" class="form-label">

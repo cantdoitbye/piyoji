@@ -489,7 +489,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('admin.samples.index') }}">
                                 <i class="fas fa-flask"></i>
-                                Sample Receiving
+                                Testing
                             </a>
                         </li>
                         

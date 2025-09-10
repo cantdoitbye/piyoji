@@ -53,6 +53,7 @@ class PocController extends BaseAdminController
     {
         return view($this->viewPrefix . '.create', [
             'title' => 'Add New ' . $this->title,
+            'types' => $this->service->getTypeOptions(),
             'pocTypes' => $this->service->getPocTypeOptions(),
             'statusOptions' => $this->service->getStatusOptions()
         ]);
@@ -65,6 +66,7 @@ class PocController extends BaseAdminController
             'email' => 'required|email|max:255|unique:pocs,email',
             'phone' => 'required|string|max:20',
             'designation' => 'nullable|string|max:255',
+            'type' => 'required|in:poc,tester',
             'poc_type' => 'required|in:seller,buyer,both',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',

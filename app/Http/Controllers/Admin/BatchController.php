@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BatchEvaluation;
 use App\Models\BatchTesterEvaluation;
+use App\Models\BatchTestingSession;
 use App\Models\Poc;
 use App\Services\BatchService;
 use App\Models\SampleBatch;
+use App\Models\SampleTestingResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -445,6 +447,310 @@ class BatchController extends Controller
         }
     }
 
+/**
+ * Show batch testing initiation modal and process
+ */
+public function initiateBatchTesting(Request $request, int $id)
+{
+    if ($request->isMethod('GET')) {
+        try {
+            $batch = SampleBatch::with(['samples'])->findOrFail($id);
+            
+            // Check if batch has samples
+            if ($batch->total_samples == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This batch has no samples to test.'
+                ], 400);
+            }
+
+            // Check if testing session already exists
+            $existingSession = BatchTestingSession::where('batch_group_id', $id)
+                                                 ->whereIn('status', [
+                                                     BatchTestingSession::STATUS_INITIATED,
+                                                     BatchTestingSession::STATUS_IN_PROGRESS
+                                                 ])
+                                                 ->first();
+
+            if ($existingSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A testing session is already active for this batch.',
+                    'redirect_url' => route('admin.batches.sample-testing', $id)
+                ], 400);
+            }
+
+            // Get testers from POCs where poc_type is 'tester'
+            $testers = Poc::where('type', 'tester')
+                         ->where('status', true)
+                         ->orderBy('poc_name')
+                         ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'batch' => $batch,
+                    'testers' => $testers
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Batch not found: ' . $e->getMessage()
+            ], 404);
+        }
+    }
+
+    // POST method - Create testing session
+    $validator = Validator::make($request->all(), [
+        'testers' => 'required|array|min:1',
+        'testers.*' => 'required|exists:pocs,id'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid tester selection',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        $batch = SampleBatch::with(['samples'])->findOrFail($id);
+        
+        // Get tester details
+        $selectedTesters = Poc::whereIn('id', $request->testers)->get();
+        $testerData = $selectedTesters->map(function ($tester) {
+            return [
+                'id' => $tester->id,
+                'name' => $tester->poc_name,
+                'designation' => $tester->designation
+            ];
+        })->toArray();
+
+        // Create testing session
+        $testingSession = BatchTestingSession::create([
+            'batch_group_id' => $id,
+            'batch_id' => $batch->batch_number,
+            'testers' => $testerData,
+            'total_samples' => $batch->total_samples,
+            'current_sample_index' => 0,
+            'status' => BatchTestingSession::STATUS_INITIATED,
+            'initiated_by' => Auth::id()
+        ]);
+
+        // Create sample testing result records for each sample
+        $sampleSequence = 1;
+        foreach ($batch->samples as $sample) {
+            SampleTestingResult::create([
+                'testing_session_id' => $testingSession->id,
+                'sample_id' => $sample->id,
+                'sample_sequence' => $sampleSequence,
+                'tester_results' => [],
+                'status' => SampleTestingResult::STATUS_PENDING
+            ]);
+            $sampleSequence++;
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Batch testing session initiated successfully',
+            'redirect_url' => route('admin.batches.sample-testing', $id)
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error initiating testing session: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Show sample-wise testing interface
+ */
+public function showSampleTesting(int $id)
+{
+    try {
+        $batch = SampleBatch::with(['samples'])->findOrFail($id);
+        
+        // Get active testing session
+        $testingSession = BatchTestingSession::where('batch_group_id', $id)
+                                           ->whereIn('status', [
+                                               BatchTestingSession::STATUS_INITIATED,
+                                               BatchTestingSession::STATUS_IN_PROGRESS
+                                           ])
+                                           ->with(['sampleResults.sample'])
+                                           ->first();
+
+        if (!$testingSession) {
+            return redirect()->route('admin.batches.index')
+                ->with('error', 'No active testing session found. Please initiate testing first.');
+        }
+
+        // Get current sample for testing
+        $currentSampleResult = $testingSession->getCurrentSample();
+        
+        if (!$currentSampleResult) {
+            // All samples completed, redirect to results
+            return redirect()->route('admin.batches.testing-results', $id)
+                ->with('success', 'All samples have been tested successfully.');
+        }
+
+        return view('admin.batches.sample-testing', compact(
+            'batch', 
+            'testingSession', 
+            'currentSampleResult'
+        ));
+        
+    } catch (\Exception $e) {
+        return redirect()->route('admin.batches.index')
+            ->with('error', 'Batch not found: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Store sample testing result and move to next sample
+ */
+public function storeSampleTestingResult(Request $request, int $id)
+{
+    $validator = Validator::make($request->all(), [
+        'sample_result_id' => 'required|exists:sample_testing_results,id',
+        'tester_results' => 'required|array',
+        'tester_results.*.tester_id' => 'required|integer',
+        'tester_results.*.c_score' => 'required|integer|min:0|max:100',
+        'tester_results.*.t_score' => 'required|integer|min:0|max:100',
+        'tester_results.*.s_score' => 'required|integer|min:0|max:100',
+        'tester_results.*.b_score' => 'required|integer|min:0|max:100',
+        'sample_remarks' => 'nullable|string|max:1000'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        $testingSession = BatchTestingSession::where('batch_group_id', $id)
+                                           ->whereIn('status', [
+                                               BatchTestingSession::STATUS_INITIATED,
+                                               BatchTestingSession::STATUS_IN_PROGRESS
+                                           ])
+                                           ->first();
+
+        if (!$testingSession) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active testing session found'
+            ], 404);
+        }
+
+        $sampleResult = SampleTestingResult::findOrFail($request->sample_result_id);
+        
+        // Mark current sample as completed
+        $sampleResult->markCompleted(
+            Auth::id(),
+            $request->tester_results,
+            $request->sample_remarks
+        );
+
+        // Move to next sample
+        $hasNext = $testingSession->moveToNextSample();
+
+        DB::commit();
+
+        if ($hasNext) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Sample testing completed. Moving to next sample.',
+                'has_next' => true,
+                'next_url' => route('admin.batches.sample-testing', $id)
+            ]);
+        } else {
+            return response()->json([
+                'success' => true,
+                'message' => 'All samples completed! Testing session finished.',
+                'has_next' => false,
+                'results_url' => route('admin.batches.testing-results', $id)
+            ]);
+        }
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error saving test result: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Show testing results for completed session
+ */
+public function showTestingResults(int $id)
+{
+    try {
+        $batch = SampleBatch::with(['samples'])->findOrFail($id);
+        
+        // Get completed testing session
+        $testingSession = BatchTestingSession::where('batch_group_id', $id)
+                                           ->where('status', BatchTestingSession::STATUS_COMPLETED)
+                                           ->with(['sampleResults.sample', 'initiatedBy'])
+                                           ->first();
+
+        if (!$testingSession) {
+            return redirect()->route('admin.batches.index')
+                ->with('error', 'No completed testing session found for this batch.');
+        }
+
+        // Get all sample results with calculations
+        $sampleResults = $testingSession->sampleResults()
+                                      ->with('sample')
+                                      ->orderBy('sample_sequence')
+                                      ->get();
+
+        // Calculate overall session statistics
+        $statistics = [
+            'total_samples' => $testingSession->total_samples,
+            'completed_samples' => $sampleResults->where('status', SampleTestingResult::STATUS_COMPLETED)->count(),
+            'average_c_score' => $sampleResults->avg(function($result) {
+                return $result->average_scores['c_score'];
+            }),
+            'average_t_score' => $sampleResults->avg(function($result) {
+                return $result->average_scores['t_score'];
+            }),
+            'average_s_score' => $sampleResults->avg(function($result) {
+                return $result->average_scores['s_score'];
+            }),
+            'average_b_score' => $sampleResults->avg(function($result) {
+                return $result->average_scores['b_score'];
+            })
+        ];
+
+        return view('admin.batches.testing-results', compact(
+            'batch',
+            'testingSession',
+            'sampleResults',
+            'statistics'
+        ));
+        
+    } catch (\Exception $e) {
+        return redirect()->route('admin.batches.index')
+            ->with('error', 'Batch not found: ' . $e->getMessage());
+    }
+}
+
     /**
      * Update batch status based on evaluation results
      */
@@ -461,4 +767,7 @@ class BatchController extends Controller
             $batch->update(['status' => 'processing']);
         }
     }
+
+
+    
 }

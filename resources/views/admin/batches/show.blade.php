@@ -192,7 +192,7 @@
                                 <th>Weight</th>
                                 <th>Status</th>
                                 <th>Evaluation</th>
-                                <th>Score</th>
+                                <th>C-T-S-B</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>

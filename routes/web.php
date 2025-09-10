@@ -260,6 +260,12 @@ Route::get('transfers', [SampleController::class, 'transfers'])->name('transfers
     Route::get('{id}/evaluation', [App\Http\Controllers\Admin\BatchController::class, 'showEvaluationForm'])->name('evaluation-form');
     Route::post('{id}/evaluation', [App\Http\Controllers\Admin\BatchController::class, 'storeEvaluation'])->name('store-evaluation');
     Route::get('{id}/evaluation-results', [App\Http\Controllers\Admin\BatchController::class, 'showEvaluationResults'])->name('evaluation-results');
+      Route::get('{id}/initiate-testing', [App\Http\Controllers\Admin\BatchController::class, 'initiateBatchTesting'])->name('initiate-testing');
+    Route::post('{id}/initiate-testing', [App\Http\Controllers\Admin\BatchController::class, 'initiateBatchTesting'])->name('initiate-testing');
+    Route::get('{id}/sample-testing', [App\Http\Controllers\Admin\BatchController::class, 'showSampleTesting'])->name('sample-testing');
+    Route::post('{id}/sample-testing', [App\Http\Controllers\Admin\BatchController::class, 'storeSampleTestingResult'])->name('store-sample-testing');
+    Route::get('{id}/testing-results', [App\Http\Controllers\Admin\BatchController::class, 'showTestingResults'])->name('testing-results');
+    
 });
 
      Route::resource('pocs', App\Http\Controllers\Admin\PocController::class);

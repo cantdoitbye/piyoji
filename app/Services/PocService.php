@@ -186,6 +186,14 @@ class PocService implements BaseServiceInterface
         ];
     }
 
+      public function getTypeOptions()
+    {
+        return [
+            'poc' => 'Poc',
+            'tester' => 'Tester'
+        ];
+    }
+
     public function getStatusOptions()
     {
         return [
