@@ -44,7 +44,13 @@ class Sample extends Model
         'evaluated_by',
         'evaluated_at',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'garden_name',
+'grade',
+'invoice_prefix',
+'inv_no',
+'source_type',
+'source_id',
     ];
 
     protected $casts = [
@@ -61,7 +67,8 @@ class Sample extends Model
     'allocated_weight' => 'decimal:2',
     'available_weight' => 'decimal:2',
     'allocation_count' => 'integer',
-    'has_sufficient_weight' => 'boolean'
+    'has_sufficient_weight' => 'boolean',
+    'inv_no' => 'integer',
     ];
 
     protected $dates = [
@@ -85,6 +92,9 @@ class Sample extends Model
     const EVALUATION_IN_PROGRESS = 'in_progress';
     const EVALUATION_COMPLETED = 'completed';
     const FIXED_ALLOCATION_WEIGHT = 0.01; 
+    const SOURCE_MANUAL = 'manual';
+const SOURCE_OFFER_LIST = 'offer_list';
+const SOURCE_EXCEL_IMPORT = 'excel_import';
 
 
     /**
@@ -272,7 +282,10 @@ class Sample extends Model
         $sample->available_weight = $sample->sample_weight;
         $sample->allocated_weight = 0;
         $sample->allocation_count = 0;
-        $sample->has_sufficient_weight = $sample->sample_weight >= self::FIXED_ALLOCATION_WEIGHT;
+         $sample->has_sufficient_weight = $sample->sample_weight >= self::FIXED_ALLOCATION_WEIGHT;
+   if (!$sample->source_type) {
+    $sample->source_type = self::SOURCE_MANUAL;
+}
     });
 
     static::updating(function ($sample) {
@@ -687,5 +700,67 @@ public function getAllocationStatusAttribute(): string
     }
     
     return $this->allocation_count . ' allocation(s) made';
+}
+
+
+// ADD these methods:
+public function offerListSource()
+{
+    return $this->belongsTo(OfferList::class, 'source_id')
+        ->where('source_type', self::SOURCE_OFFER_LIST);
+}
+
+public function getFullSampleIdentifierAttribute(): string
+{
+    $parts = [$this->sample_id];
+    
+    if ($this->garden_name) $parts[] = $this->garden_name;
+    if ($this->grade) $parts[] = $this->grade;
+    if ($this->invoice_prefix && $this->inv_no) {
+        $parts[] = $this->invoice_prefix . $this->inv_no;
+    }
+    
+    return implode('-', $parts);
+}
+
+public function getInvoiceReferenceAttribute(): ?string
+{
+    if ($this->invoice_prefix && $this->inv_no) {
+        return $this->invoice_prefix . $this->inv_no;
+    }
+    return null;
+}
+
+public function scopeFromOfferList($query)
+{
+    return $query->where('source_type', self::SOURCE_OFFER_LIST);
+}
+
+public function scopeByGarden($query, $gardenName)
+{
+    return $query->where('garden_name', 'LIKE', "%{$gardenName}%");
+}
+
+public function scopeByGrade($query, $grade)
+{
+    return $query->where('grade', $grade);
+}
+
+public function isFromOfferList(): bool
+{
+    return $this->source_type === self::SOURCE_OFFER_LIST;
+}
+
+public function getSourceDescriptionAttribute(): string
+{
+    switch ($this->source_type) {
+        case self::SOURCE_OFFER_LIST:
+            return 'Auto-created from Offer List';
+        case self::SOURCE_EXCEL_IMPORT:
+            return 'Excel Import';
+        case self::SOURCE_MANUAL:
+        default:
+            return 'Manual Entry';
+    }
 }
 }

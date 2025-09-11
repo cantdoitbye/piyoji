@@ -259,9 +259,9 @@ class OfferListController extends Controller
             // Add headers with sample data
             fputcsv($file, [
                 'DeviceID', 'N_AWR_NO', 'Date', 'FOR', 'GARDEN', 'GRADE', 
-                'INV_PRETX', 'INV_NO', 'PARTY_1', 'PARTY_2', 'PARTY_3', 'PARTY_4', 'PARTY_5',
+                'INV_PREFIX', 'INV_NO', 'PARTY_1', 'PARTY_2', 'PARTY_3', 'PARTY_4', 'PARTY_5',
                 'PARTY_6', 'PARTY_7', 'PARTY_8', 'PARTY_9', 'PARTY_10',
-                'PKGS', 'NET1', 'TTL_KGS', 'D_O_PACKING', 'TYPE', 'Key', 'NameOfUpload'
+                'PKGS', 'NETT', 'TTL_KGS', 'D_O_PACKING', 'TYPE', 'Key', 'NameOfUpload'
             ]);
             
             // Add sample row
